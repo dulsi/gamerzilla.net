@@ -14,8 +14,10 @@ namespace backend.Models
         public int UserId { get; set; }
 
         public int GameId { get; set; }
+        public Game game { get; set; }
 
         public int TrophyId { get; set; }
+        public Trophy trophy { get; set; }
 
         public bool Achieved { get; set; }
 

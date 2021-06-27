@@ -32,7 +32,7 @@ namespace backend.Models
         {
             ShortName = g.shortname;
             GameName = g.name;
-            VersionNum = g.version;
+            VersionNum = Int32.Parse(g.version);
             foreach (TrophyApi1 t1 in g.trophy)
             {
                 bool found = false;
@@ -57,7 +57,7 @@ namespace backend.Models
         {
             g.shortname = ShortName;
             g.name = GameName;
-            g.version = VersionNum;
+            g.version = VersionNum.ToString();
             foreach (Trophy t in Trophies)
             {
                 TrophyApi1 t1 = new TrophyApi1();
@@ -89,7 +89,7 @@ namespace backend.Models
 
         public string name { get; set; }
 
-        public int version { get; set; }
+        public string version { get; set; }
         
         public IList<TrophyApi1> trophy { get; set; }
     }

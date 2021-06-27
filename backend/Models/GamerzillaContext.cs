@@ -20,6 +20,8 @@ namespace backend.Models
         {
             modelBuilder.Entity<Game>()
                 .HasMany(e => e.Trophies);
+            modelBuilder.Entity<Game>()
+                .HasIndex(e => e.ShortName).IsUnique();
             modelBuilder.Entity<Trophy>()
                 .HasOne(e => e.Stat);
         }

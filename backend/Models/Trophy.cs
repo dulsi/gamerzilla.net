@@ -30,23 +30,23 @@ namespace backend.Models
         {
             TrophyName = t.trophy_name;
             TrophyDescription = t.trophy_desc;
-            MaxProgress = t.max_progress;
+            MaxProgress = Int32.Parse(t.max_progress);
         }
 
         public void Export(TrophyApi1 t)
         {
             t.trophy_name = TrophyName;
             t.trophy_desc = TrophyDescription;
-            t.max_progress = MaxProgress;
+            t.max_progress = MaxProgress.ToString();
             if (Stat != null)
             {
-                t.achieved = (Stat.Achieved ? 1 : 0);
-                t.progress = Stat.Progress;
+                t.achieved = (Stat.Achieved ? "1" : "0");
+                t.progress = Stat.Progress.ToString();
             }
             else
             {
-                t.achieved = 0;
-                t.progress = 0;
+                t.achieved = "0";
+                t.progress = "0";
             }
         }
     }
@@ -55,8 +55,8 @@ namespace backend.Models
     {
         public string trophy_name { get; set; }
         public string trophy_desc { get; set; }
-        public int achieved { get; set; }
-        public int progress { get; set; }
-        public int max_progress { get; set; }
+        public string achieved { get; set; }
+        public string progress { get; set; }
+        public string max_progress { get; set; }
     }
 }

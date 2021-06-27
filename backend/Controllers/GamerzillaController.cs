@@ -66,14 +66,26 @@ namespace backend.Controllers
         }
 
         [Route("game")]
-        public GameApi1 GetGame(string game)
+        public GameApi1 GetGame1(string game)
+        {
+            return GetGame(game);
+        }
+
+        [HttpPost]
+        [Route("game")]
+        public GameApi1 GetGame2([FromForm] string game)
+        {
+            return GetGame(game);
+        }
+
+        private GameApi1 GetGame(string game)
         {
             Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             GameApi1 gameInfo1 = null;
             if (gameInfo != null)
             {
                 gameInfo1 = new GameApi1();
-                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat).Where(t => t.GameId == gameInfo.Id && (t.Stat == null || t.Stat.UserId == 1)).ToList();
+                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat).Where(t => t.GameId == gameInfo.Id && (t.Stat == null || (t.Stat.UserId == 1 && t.Stat.GameId == gameInfo.Id))).ToList();
                 gameInfo.Export(gameInfo1);
             }
             return gameInfo1;
@@ -83,11 +95,12 @@ namespace backend.Controllers
         [Route("game/add")]
         public GameApi1 AddGame([FromForm] string game)
         {
+            _logger.LogInformation("AddGame");
             Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             GameApi1 gameInfo1 = JsonConvert.DeserializeObject<GameApi1>(game);
             if (gameInfo != null)
             {
-                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat).Where(t => t.GameId == gameInfo.Id && (t.Stat == null || t.Stat.UserId == 1)).ToList();
+                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat).Where(t => t.GameId == gameInfo.Id && (t.Stat == null || (t.Stat.UserId == 1 && t.Stat.GameId == gameInfo.Id))).ToList();
                 return gameInfo1;
             }
             else
@@ -107,8 +120,6 @@ namespace backend.Controllers
             Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             if (gameInfo != null)
             {
-                _logger.LogInformation(imagefile.FileName);
-                _logger.LogInformation(imagefile.ContentType);
                 using (Stream s = imagefile.OpenReadStream())
                 {
                     Image img = new Image();
@@ -127,7 +138,19 @@ namespace backend.Controllers
         }
 
         [Route("game/image/show")]
-        public async Task<IActionResult> ShowGameImage(string game)
+        public async Task<IActionResult> ShowGameImage1(string game)
+        {
+            return await ShowGameImage(game);
+        }
+
+        [HttpPost]
+        [Route("game/image/show")]
+        public async Task<IActionResult> ShowGameImage2([FromForm] string game)
+        {
+            return await ShowGameImage(game);
+        }
+
+        private async Task<IActionResult> ShowGameImage(string game)
         {
             Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             if (gameInfo != null)
@@ -176,7 +199,19 @@ namespace backend.Controllers
         }
 
         [Route("trophy/image/show")]
-        public async Task<IActionResult> ShowTrophyImage(string game, string trophy, int achieved)
+        public async Task<IActionResult> ShowTrophyImage1(string game, string trophy, int achieved)
+        {
+            return await ShowTrophyImage(game, trophy, achieved);
+        }
+
+        [HttpPost]
+        [Route("trophy/image/show")]
+        public async Task<IActionResult> ShowTrophyImage2([FromForm] string game, [FromForm] string trophy, [FromForm] int achieved)
+        {
+            return await ShowTrophyImage(game, trophy, achieved);
+        }
+
+        private async Task<IActionResult> ShowTrophyImage(string game, string trophy, int achieved)
         {
             Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
@@ -188,6 +223,71 @@ namespace backend.Controllers
             }
             else
                 return NotFound();
+        }
+
+        [HttpPost]
+        [Route("trophy/set")]
+        public async Task<IActionResult> SetTrophy([FromForm] string game, [FromForm] string trophy)
+        {
+            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
+            if (gameInfo == null)
+                return NotFound();
+            Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
+            if (trophyInfo == null)
+                return NotFound();
+            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == 1 && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
+            if (userStat != null)
+            {
+                userStat.Achieved = true;
+                _context.SaveChanges();
+                return Ok();
+            }
+            else
+            {
+                userStat = new UserStat();
+                userStat.GameId = gameInfo.Id;
+                userStat.TrophyId = trophyInfo.Id;
+                userStat.UserId = 1;
+                userStat.Achieved = true;
+                userStat.Progress = 0;
+                _context.UserStats.Add(userStat);
+                _context.SaveChanges();
+                return Ok();
+            }
+        }
+
+        [HttpPost]
+        [Route("trophy/set/stat")]
+        public async Task<IActionResult> AddTrophyImage([FromForm] string game, [FromForm] string trophy, [FromForm] int progress)
+        {
+            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
+            if (gameInfo == null)
+                return NotFound();
+            Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
+            if (trophyInfo == null)
+                return NotFound();
+            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == 1 && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
+            if (userStat != null)
+            {
+                if (progress > userStat.Progress)
+                {
+                    userStat.Progress = progress;
+                    _context.SaveChanges();
+                }
+                return Ok();
+            }
+            else
+            {
+                userStat = new UserStat();
+                userStat.GameId = gameInfo.Id;
+                userStat.TrophyId = trophyInfo.Id;
+                userStat.UserId = 1;
+                userStat.Achieved = false;
+                userStat.Progress = progress;
+                _context.UserStats.Add(userStat);
+                _context.SaveChanges();
+                return Ok();
+            }
         }
     }
 }
