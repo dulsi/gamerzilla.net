@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using backend.Models;
+using backend.Filters;
 
 namespace backend.Controllers
 {
@@ -65,12 +66,14 @@ namespace backend.Controllers
             return result;
         }
 
+        [BasicAuth]
         [Route("game")]
         public GameApi1 GetGame1(string game)
         {
             return GetGame(game);
         }
 
+        [BasicAuth]
         [HttpPost]
         [Route("game")]
         public GameApi1 GetGame2([FromForm] string game)
@@ -91,6 +94,7 @@ namespace backend.Controllers
             return gameInfo1;
         }
 
+        [BasicAuth]
         [HttpPost]
         [Route("game/add")]
         public GameApi1 AddGame([FromForm] string game)
@@ -113,6 +117,7 @@ namespace backend.Controllers
             }
         }
 
+        [BasicAuth]
         [HttpPost]
         [Route("game/image")]
         public async Task<IActionResult> AddGameImage([FromForm] string game, [FromForm] IFormFile imagefile)
@@ -163,6 +168,7 @@ namespace backend.Controllers
                 return NotFound();
         }
 
+        [BasicAuth]
         [HttpPost]
         [Route("trophy/image")]
         public async Task<IActionResult> AddTrophyImage([FromForm] string game, [FromForm] string trophy, [FromForm] IFormFile trueimagefile, [FromForm] IFormFile falseimagefile)
@@ -225,6 +231,7 @@ namespace backend.Controllers
                 return NotFound();
         }
 
+        [BasicAuth]
         [HttpPost]
         [Route("trophy/set")]
         public async Task<IActionResult> SetTrophy([FromForm] string game, [FromForm] string trophy)
@@ -256,6 +263,7 @@ namespace backend.Controllers
             }
         }
 
+        [BasicAuth]
         [HttpPost]
         [Route("trophy/set/stat")]
         public async Task<IActionResult> AddTrophyImage([FromForm] string game, [FromForm] string trophy, [FromForm] int progress)
