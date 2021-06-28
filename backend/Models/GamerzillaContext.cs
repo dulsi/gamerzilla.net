@@ -14,7 +14,7 @@ namespace backend.Models
         public virtual DbSet<Image> Images { get; set; }
         public virtual DbSet<UserStat> UserStats { get; set; }
 
-        public GamerzillaContext(DbContextOptions options) : base(options) { }
+        public GamerzillaContext(DbContextOptions<GamerzillaContext> options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,7 +23,7 @@ namespace backend.Models
             modelBuilder.Entity<Game>()
                 .HasIndex(e => e.ShortName).IsUnique();
             modelBuilder.Entity<Trophy>()
-                .HasOne(e => e.Stat);
+                .HasMany(e => e.Stat);
         }
     }
 }

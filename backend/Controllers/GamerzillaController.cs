@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using backend.Models;
 using backend.Filters;
+using backend.Context;
 
 namespace backend.Controllers
 {
@@ -22,12 +23,14 @@ namespace backend.Controllers
     {
         private readonly ILogger<GamerzillaController> _logger;
         private readonly GamerzillaContext _context;
+        private readonly SessionContext _sessionContext;
 
-        public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context)
+        public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context, SessionContext sessionContext)
         {
             _logger = logger;
             _context = context;
             _context.Database.EnsureCreated();
+            _sessionContext = sessionContext;
         }
 
         [Route("games")]
@@ -43,7 +46,7 @@ namespace backend.Controllers
                 using (DbCommand command = connection.CreateCommand())
                 {
                     command.CommandText = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = @USERID and g.id = u2.gameid and u2.userid = 1) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy from game g where g.id in (select gameid from userstat u where u.userid = @USERID)";
-                    command.Parameters.Add(new SqliteParameter("@USERID", 1));
+                    command.Parameters.Add(new SqliteParameter("@USERID", _sessionContext.UserId));
 
                     using (DbDataReader dataReader = command.ExecuteReader())
                         if (dataReader.HasRows)
@@ -88,7 +91,7 @@ namespace backend.Controllers
             if (gameInfo != null)
             {
                 gameInfo1 = new GameApi1();
-                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat).Where(t => t.GameId == gameInfo.Id && (t.Stat == null || (t.Stat.UserId == 1 && t.Stat.GameId == gameInfo.Id))).ToList();
+                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat .Where(s => s.UserId == _sessionContext.UserId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToList();
                 gameInfo.Export(gameInfo1);
             }
             return gameInfo1;
@@ -104,7 +107,8 @@ namespace backend.Controllers
             GameApi1 gameInfo1 = JsonConvert.DeserializeObject<GameApi1>(game);
             if (gameInfo != null)
             {
-                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat).Where(t => t.GameId == gameInfo.Id && (t.Stat == null || (t.Stat.UserId == 1 && t.Stat.GameId == gameInfo.Id))).ToList();
+                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat
+                    .Where(s => s.UserId == _sessionContext.UserId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToList();
                 return gameInfo1;
             }
             else
@@ -242,7 +246,7 @@ namespace backend.Controllers
             Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
             if (trophyInfo == null)
                 return NotFound();
-            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == 1 && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
+            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == _sessionContext.UserId && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
             if (userStat != null)
             {
                 userStat.Achieved = true;
@@ -274,7 +278,7 @@ namespace backend.Controllers
             Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
             if (trophyInfo == null)
                 return NotFound();
-            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == 1 && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
+            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == _sessionContext.UserId && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
             if (userStat != null)
             {
                 if (progress > userStat.Progress)

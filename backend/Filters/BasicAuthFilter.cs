@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
 using System.Net;
 using System;
 using System.Text;
+using backend.Service;
 
 namespace backend.Filters
 {
@@ -46,9 +48,8 @@ namespace backend.Filters
 
         public bool IsAuthorized(AuthorizationFilterContext context, string username, string password)
         {
-            return (username == "dulsi") && (password == "dulsi");
-    /*        var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-            return userService.IsValidUser(username, password);*/
+            var userService = context.HttpContext.RequestServices.GetRequiredService<UserService>();
+            return userService.IsValidUser(username, password);
         }
 
         private void ReturnUnauthorizedResult(AuthorizationFilterContext context)

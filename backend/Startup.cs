@@ -14,6 +14,8 @@ using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Sqlite;
 using backend.Models;
+using backend.Context;
+using backend.Service;
 
 namespace backend
 {
@@ -37,6 +39,10 @@ namespace backend
             });
             services.AddDbContext<GamerzillaContext>(
                 options => options.UseSqlite("Filename=/home/dulsi/proj/gamerzilla.net/backend/Test.db"));
+            services.AddDbContext<UserContext>(
+                options => options.UseSqlite("Filename=/home/dulsi/proj/gamerzilla.net/backend/User.db"));
+            services.AddScoped<SessionContext>();
+            services.AddScoped<UserService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

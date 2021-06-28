@@ -9,6 +9,11 @@ namespace backend.Models
     [Table("Trophy")]
     public class Trophy
     {
+        public Trophy()
+        {
+            Stat = new List<UserStat>();
+        }
+
         public int Id { get; set; }
 
         public int GameId { get; set; }
@@ -24,7 +29,7 @@ namespace backend.Models
 
         public int MaxProgress { get; set; }
         
-        public UserStat Stat { get; set; }
+        public IList<UserStat> Stat { get; set; }
 
         public void Import(TrophyApi1 t)
         {
@@ -38,10 +43,10 @@ namespace backend.Models
             t.trophy_name = TrophyName;
             t.trophy_desc = TrophyDescription;
             t.max_progress = MaxProgress.ToString();
-            if (Stat != null)
+            if (Stat.Count != 0)
             {
-                t.achieved = (Stat.Achieved ? "1" : "0");
-                t.progress = Stat.Progress.ToString();
+                t.achieved = (Stat[0].Achieved ? "1" : "0");
+                t.progress = Stat[0].Progress.ToString();
             }
             else
             {
