@@ -1,0 +1,11 @@
+export const grey1 = '#383737';
+export const grey2 = '#5c5a5a';
+export const grey3 = '#857c81';
+export const grey4 = '#b9b9b9';
+export const grey5 = '#e3e2e2';
+export const grey6 = '#f7f8fa';
+export const primary1 = '#681c41';
+export const primary2 = '#824c67';
+export const accent1 = '#dbb365';
+export const accent2 = '#efd197';
+export const fontSize = '16px';

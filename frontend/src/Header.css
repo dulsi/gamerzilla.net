@@ -1,0 +1,35 @@
+.Header {
+  position: fixed;
+  box-sizing: border-box;
+  top: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #f7f8fa;
+  box-shadow: 0 3px 7px 0 rgba(110, 112, 114, 0.21);
+}
+
+.Headername {
+  font-size: 24px;
+  font-weight: bold;
+  color: #383737;
+  text-decoration: none;
+}
+
+.Signin {
+  font-size: 16px;
+  padding: 5px 10px;
+  background-color: transparent;
+  color: #5c5a5a;
+  text-decoration: none;
+  cursor: pointer;
+}
+.Signin:focus {
+  outline-color: #e3e2e2;
+}
+.Signin > span {
+  margin-left: 10px;
+}

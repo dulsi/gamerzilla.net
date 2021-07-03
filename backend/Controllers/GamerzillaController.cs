@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using backend.Models;
 using backend.Filters;
 using backend.Context;
+using backend.Service;
 
 namespace backend.Controllers
 {
@@ -24,17 +25,39 @@ namespace backend.Controllers
         private readonly ILogger<GamerzillaController> _logger;
         private readonly GamerzillaContext _context;
         private readonly SessionContext _sessionContext;
+        private readonly UserService _userService;
 
-        public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context, SessionContext sessionContext)
+        public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context, SessionContext sessionContext, UserService userService)
         {
             _logger = logger;
             _context = context;
             _context.Database.EnsureCreated();
             _sessionContext = sessionContext;
+            _userService = userService;
         }
 
         [Route("games")]
-        public IList<GameSummary> GetGames(string game)
+        public IList<GameSummary> GetGames1(string username)
+        {
+            int userId = 0;
+            if (username != null)
+            {
+                userId = _userService.findUser(username);
+            }
+            else
+                userId = _sessionContext.UserId;
+            return GetGames(userId);
+        }
+
+        [BasicAuth]
+        [HttpPost]
+        [Route("games")]
+        public IList<GameSummary> GetGames2()
+        {
+            return GetGames(_sessionContext.UserId);
+        }
+
+        public IList<GameSummary> GetGames(int userId)
         {
             DbConnection connection = _context.Database.GetDbConnection();
             IList<GameSummary> result = new List<GameSummary>();
@@ -46,7 +69,7 @@ namespace backend.Controllers
                 using (DbCommand command = connection.CreateCommand())
                 {
                     command.CommandText = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = @USERID and g.id = u2.gameid and u2.userid = 1) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy from game g where g.id in (select gameid from userstat u where u.userid = @USERID)";
-                    command.Parameters.Add(new SqliteParameter("@USERID", _sessionContext.UserId));
+                    command.Parameters.Add(new SqliteParameter("@USERID", userId));
 
                     using (DbDataReader dataReader = command.ExecuteReader())
                         if (dataReader.HasRows)
@@ -69,11 +92,17 @@ namespace backend.Controllers
             return result;
         }
 
-        [BasicAuth]
         [Route("game")]
-        public GameApi1 GetGame1(string game)
+        public GameApi1 GetGame1(string game, string username)
         {
-            return GetGame(game);
+            int userId = 0;
+            if (username != null)
+            {
+                userId = _userService.findUser(username);
+            }
+            else
+                userId = _sessionContext.UserId;
+            return GetGame(game, userId);
         }
 
         [BasicAuth]
@@ -81,17 +110,17 @@ namespace backend.Controllers
         [Route("game")]
         public GameApi1 GetGame2([FromForm] string game)
         {
-            return GetGame(game);
+            return GetGame(game, _sessionContext.UserId);
         }
 
-        private GameApi1 GetGame(string game)
+        private GameApi1 GetGame(string game, int userId)
         {
             Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             GameApi1 gameInfo1 = null;
             if (gameInfo != null)
             {
                 gameInfo1 = new GameApi1();
-                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat .Where(s => s.UserId == _sessionContext.UserId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToList();
+                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat .Where(s => s.UserId == userId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToList();
                 gameInfo.Export(gameInfo1);
             }
             return gameInfo1;

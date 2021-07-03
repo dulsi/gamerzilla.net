@@ -43,11 +43,18 @@ namespace backend
                 options => options.UseSqlite("Filename=/home/dulsi/proj/gamerzilla.net/backend/User.db"));
             services.AddScoped<SessionContext>();
             services.AddScoped<UserService>();
+            services.AddCors(options =>
+                options.AddPolicy("CorsPolicy", builder =>
+                    builder.AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .WithOrigins("http://localhost:3000")
+                        .AllowCredentials()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseCors("CorsPolicy");
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
