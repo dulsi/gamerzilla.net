@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import { Link } from 'react-router-dom';
 import { GameListData } from './GameListData';
-import { webAPIUrl } from './AppSettings';
+import { relativeAPIUrl } from './AppSettings';
 import './GameList.css';
 
 interface Props {
@@ -17,7 +17,7 @@ export const GameList: FC<Props> = ({userName, data}) => (
     </div>
     {data.map(game => (
       <div key={game.shortname} className="GameListItem GameListRow">
-        <div className="GameListColumn GameListTitle"><Link to={`/games/${userName}/${game.shortname}`}><img alt={`${game.name}`} src={`${webAPIUrl}/game/image/show?game=${game.shortname}`} />{game.name}</Link></div>
+        <div className="GameListColumn GameListTitle"><Link to={`/games/${userName}/${game.shortname}`}><img alt={`${game.name}`} src={`${relativeAPIUrl}/game/image/show?game=${game.shortname}`} />{game.name}</Link></div>
         <div className="GameListColumn GameListEarned">{game.earned}</div>
         <div className="GameListColumn GameListTotal">{game.total}</div>
       </div>
