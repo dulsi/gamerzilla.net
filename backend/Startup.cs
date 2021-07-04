@@ -48,7 +48,7 @@ namespace backend
                 options.AddPolicy("CorsPolicy", builder =>
                     builder.AllowAnyMethod()
                         .AllowAnyHeader()
-                        .WithOrigins(Configuration["Frontend"])
+                        .WithOrigins(Configuration["Frontend"].Split(','))
                         .AllowCredentials()));
         }
 
