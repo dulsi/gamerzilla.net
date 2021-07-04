@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,22 +39,26 @@ namespace backend
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "backend", Version = "v1" });
             });
             services.AddDbContext<GamerzillaContext>(
-                options => options.UseSqlite("Filename=/home/dulsi/proj/gamerzilla.net/backend/Test.db"));
+                options => options.UseSqlite(Configuration["ConnectionStrings:TrophyConnection"]));
             services.AddDbContext<UserContext>(
-                options => options.UseSqlite("Filename=/home/dulsi/proj/gamerzilla.net/backend/User.db"));
+                options => options.UseSqlite(Configuration["ConnectionStrings:UserConnection"]));
             services.AddScoped<SessionContext>();
             services.AddScoped<UserService>();
             services.AddCors(options =>
                 options.AddPolicy("CorsPolicy", builder =>
                     builder.AllowAnyMethod()
                         .AllowAnyHeader()
-                        .WithOrigins("http://localhost:3000")
+                        .WithOrigins(Configuration["Frontend"])
                         .AllowCredentials()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
             app.UseCors("CorsPolicy");
             if (env.IsDevelopment())
             {
