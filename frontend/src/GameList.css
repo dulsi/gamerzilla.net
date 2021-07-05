@@ -17,14 +17,14 @@
   border-top: none;
 }
 
-.GameListRow:after {
-  content: '';
+.GameListRow {
   display: table;
-  clear: both;
+  vertical-align: bottom;
+  width: 100%;
 }
 
 .GameListColumn {
-  float: left;
+  display: table-cell;
 }
 
 .GameListTitle {
