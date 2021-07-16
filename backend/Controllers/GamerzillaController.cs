@@ -11,6 +11,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 using backend.Models;
 using backend.Filters;
 using backend.Context;
@@ -160,12 +162,11 @@ namespace backend.Controllers
             {
                 using (Stream s = imagefile.OpenReadStream())
                 {
-                    Image img = new Image();
+                    backend.Models.Image img = new backend.Models.Image();
                     img.GameId = gameInfo.Id;
                     img.TrophyId = -1;
                     img.Achieved = true;
-                    img.data = new byte[imagefile.Length];
-                    s.Read(img.data, 0, (int)imagefile.Length);
+                    img.data = ResizeImage(s, 368, 172);
                     _context.Images.Add(img);
                     _context.SaveChanges();
                 }
@@ -193,7 +194,7 @@ namespace backend.Controllers
             Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             if (gameInfo != null)
             {
-                Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == -1);
+                backend.Models.Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == -1);
                 Stream s = new MemoryStream(img.data);
                 return new FileStreamResult(s, "image/png");
             }
@@ -212,22 +213,20 @@ namespace backend.Controllers
             {
                 using (Stream s1 = trueimagefile.OpenReadStream())
                 {
-                    Image img = new Image();
+                    backend.Models.Image img = new backend.Models.Image();
                     img.GameId = gameInfo.Id;
                     img.TrophyId = trophyInfo.Id;
                     img.Achieved = true;
-                    img.data = new byte[trueimagefile.Length];
-                    s1.Read(img.data, 0, (int)trueimagefile.Length);
+                    img.data = ResizeImage(s1, 64, 64);
                     _context.Images.Add(img);
                 }
                 using (Stream s2 = falseimagefile.OpenReadStream())
                 {
-                    Image img = new Image();
+                    backend.Models.Image img = new backend.Models.Image();
                     img.GameId = gameInfo.Id;
                     img.TrophyId = trophyInfo.Id;
                     img.Achieved = false;
-                    img.data = new byte[falseimagefile.Length];
-                    s2.Read(img.data, 0, (int)falseimagefile.Length);
+                    img.data = ResizeImage(s2, 64, 64);
                     _context.Images.Add(img);
                 }
                 _context.SaveChanges();
@@ -256,7 +255,7 @@ namespace backend.Controllers
             Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
             if (gameInfo != null)
             {
-                Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == trophyInfo.Id && (i.Achieved == (achieved == 1)));
+                backend.Models.Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == trophyInfo.Id && (i.Achieved == (achieved == 1)));
                 Stream s = new MemoryStream(img.data);
                 return new FileStreamResult(s, "image/png");
             }
@@ -329,6 +328,22 @@ namespace backend.Controllers
                 _context.SaveChanges();
                 return Ok();
             }
+        }
+        
+        private byte[] ResizeImage(Stream s, int w, int h)
+        {
+            SixLabors.ImageSharp.Image imgOrig = SixLabors.ImageSharp.Image.Load(s, new SixLabors.ImageSharp.Formats.Png.PngDecoder());
+            SixLabors.ImageSharp.Image imgNew = imgOrig.Clone(x => x.Resize(new ResizeOptions
+            {
+                Size = new Size(w, h),
+                Mode = ResizeMode.Stretch
+            }));
+            MemoryStream memStream = new MemoryStream(20000);
+            imgNew.Save(memStream, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+            memStream.Seek(0, SeekOrigin.Begin);
+            byte[] data = new byte[memStream.Length];
+            memStream.Read(data, 0, (int)memStream.Length);
+            return data;
         }
     }
 }
