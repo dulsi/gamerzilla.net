@@ -70,7 +70,7 @@ namespace backend.Controllers
 
                 using (DbCommand command = connection.CreateCommand())
                 {
-                    command.CommandText = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = @USERID and g.id = u2.gameid and u2.userid = 1) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy from game g where g.id in (select gameid from userstat u where u.userid = @USERID)";
+                    command.CommandText = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc";
                     command.Parameters.Add(new SqliteParameter("@USERID", userId));
 
                     using (DbDataReader dataReader = command.ExecuteReader())
