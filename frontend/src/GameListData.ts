@@ -1,5 +1,12 @@
 import { http } from "./http";
 
+export interface GameSummary {
+  currentPage: number;
+  pageSize: number;
+  totalPages: number;
+  games: GameListData[];
+}
+
 export interface GameListData {
   shortname: string;
   name: string;
@@ -29,23 +36,30 @@ const gameEmpty: GameData = {
   trophy: []
 };
 
-export const getGameList = async (userName: string):
-  Promise<GameListData[]> => {
+const gameSummaryEmpty: GameSummary = {
+  currentPage: 0,
+  pageSize: 20,
+  totalPages: 0,
+  games: []
+};
+
+export const getGameList = async (userName: string, page: number):
+  Promise<GameSummary> => {
     try {
       const result = await http<
         undefined,
-        GameListData[]
+        GameSummary
       >({
-        path: '/games?username=' + userName,
+        path: '/games?username=' + userName + '&currentpage=' + page,
       });
       if (result.parsedBody) {
         return result.parsedBody;
       } else {
-        return [];
+        return gameSummaryEmpty;
       }
     } catch (ex) {
       console.error(ex);
-      return [];
+      return gameSummaryEmpty;
     }
   };
 

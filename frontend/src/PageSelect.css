@@ -1,0 +1,11 @@
+.Pagination {
+  width: 100%;
+}
+
+.Next {
+  float: right;
+}
+
+.Prev {
+  float: left;
+}

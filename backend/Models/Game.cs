@@ -69,6 +69,23 @@ namespace backend.Models
 
     public class GameSummary
     {
+        public GameSummary()
+        {
+            games = new List<GameShort>();
+            pageSize = 20;
+        }
+
+        public int currentPage { get; set; }
+
+        public int pageSize { get; set; }
+
+        public int totalPages { get; set; }
+
+        public IList<GameShort> games { get; set; }
+    }
+
+    public class GameShort
+    {
         public string shortname { get; set; }
 
         public string name { get; set; }

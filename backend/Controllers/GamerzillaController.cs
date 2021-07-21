@@ -39,7 +39,7 @@ namespace backend.Controllers
         }
 
         [Route("games")]
-        public IList<GameSummary> GetGames1(string username)
+        public GameSummary GetGames1(string username, int pagesize = 20, int currentpage = 0)
         {
             int userId = 0;
             if (username != null)
@@ -48,21 +48,77 @@ namespace backend.Controllers
             }
             else
                 userId = _sessionContext.UserId;
-            return GetGames(userId);
+            DbConnection connection = _context.Database.GetDbConnection();
+            GameSummary result = new GameSummary();
+            result.currentPage = currentpage;
+            result.pageSize = pagesize;
+
+            try
+            {
+                connection.Open();
+
+                int totalRead = 0;
+                using (DbCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc limit @LIMIT offset @OFFSET";
+                    command.Parameters.Add(new SqliteParameter("@USERID", userId));
+                    command.Parameters.Add(new SqliteParameter("@LIMIT", result.pageSize));
+                    command.Parameters.Add(new SqliteParameter("@OFFSET", result.currentPage * result.pageSize));
+
+                    using (DbDataReader dataReader = command.ExecuteReader())
+                        if (dataReader.HasRows)
+                            while (dataReader.Read())
+                            {
+                                GameShort summary = new GameShort();
+                                summary.shortname = dataReader.GetString(0);
+                                summary.name = dataReader.GetString(1);
+                                summary.earned = dataReader.GetInt32(2);
+                                summary.total = dataReader.GetInt32(3);
+                                result.games.Add(summary);
+                                totalRead++;
+                            }
+                }
+                if (totalRead != result.pageSize)
+                {
+                    result.totalPages = result.currentPage + 1;
+                }
+                else
+                {
+                    using (DbCommand command = connection.CreateCommand())
+                    {
+                        command.CommandText = "select count(*) from game g where g.id in (select gameid from userstat u where u.userid = @USERID)";
+                        command.Parameters.Add(new SqliteParameter("@USERID", userId));
+
+                        using (DbDataReader dataReader = command.ExecuteReader())
+                            if (dataReader.HasRows)
+                                while (dataReader.Read())
+                                {
+                                    int total = dataReader.GetInt32(0);
+                                    result.totalPages = total / result.pageSize + (total % result.pageSize > 0 ? 1 : 0);
+                                }
+                    }
+                }
+            }
+
+            catch (System.Exception) { }
+
+            finally { connection.Close(); }
+
+            return result;
         }
 
         [BasicAuth]
         [HttpPost]
         [Route("games")]
-        public IList<GameSummary> GetGames2()
+        public IList<GameShort> GetGames2()
         {
             return GetGames(_sessionContext.UserId);
         }
 
-        public IList<GameSummary> GetGames(int userId)
+        public IList<GameShort> GetGames(int userId)
         {
             DbConnection connection = _context.Database.GetDbConnection();
-            IList<GameSummary> result = new List<GameSummary>();
+            IList<GameShort> result = new List<GameShort>();
 
             try
             {
@@ -77,7 +133,7 @@ namespace backend.Controllers
                         if (dataReader.HasRows)
                             while (dataReader.Read())
                             {
-                                GameSummary summary = new GameSummary();
+                                GameShort summary = new GameShort();
                                 summary.shortname = dataReader.GetString(0);
                                 summary.name = dataReader.GetString(1);
                                 summary.earned = dataReader.GetInt32(2);

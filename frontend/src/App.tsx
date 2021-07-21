@@ -16,8 +16,9 @@ function App() {
         <Switch>
           <Route exact path="/" component={HomePage} />
           <Route exact path="/games/:userName" component={GamesPage} />
+          <Route exact path="/games/:userName/:page" component={GamesPage} />
           <Route path="/signin" component={SignInPage} />
-          <Route path="/games/:userName/:gameId" component={GamePage} />
+          <Route path="/game/:userName/:gameId" component={GamePage} />
           <Route component={NotFoundPage} />
         </Switch>
       </div>

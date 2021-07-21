@@ -4,10 +4,12 @@ import './GamesPage.css';
 import { GameList } from './GameList';
 import { Page } from './Page';
 import { PageTitle } from './PageTitle';
-import { getGameList, GameListData } from './GameListData';
+import { PageSelect } from './PageSelect';
+import { getGameList, GameSummary } from './GameListData';
 
 interface RouteParams {
   userName: string;
+  page?: string;
 }
 
 export const GamesPage: FC<RouteComponentProps<RouteParams>> =
@@ -15,13 +17,13 @@ export const GamesPage: FC<RouteComponentProps<RouteParams>> =
   match
 }) => {
   const [gamelist, setGameList]
-    = useState<GameListData[] | null>(null);
+    = useState<GameSummary | null>(null);
   const [gameListLoading, setGameListLoading] = useState(true);
   useEffect(() => {
     const doGetGameList = async () => {
       if (gameListLoading)
       {
-        const glist = await getGameList(match.params.userName);
+        const glist = await getGameList(match.params.userName, parseInt(match.params.page ?? "0"));
         setGameList(glist);
         setGameListLoading(false);
       }
@@ -39,7 +41,11 @@ export const GamesPage: FC<RouteComponentProps<RouteParams>> =
         Loading...
         </div>
       ) : (
-        <GameList userName={`${match.params.userName}`} data={gamelist || []} />
+        <div>
+        <PageSelect userName={`${match.params.userName}`} currentPage={gamelist.currentPage} totalPages={gamelist.totalPages} setGameListLoading={() => { setGameListLoading(true); } } />
+        <GameList userName={`${match.params.userName}`} data={gamelist.games || []} />
+        <PageSelect userName={`${match.params.userName}`} currentPage={gamelist.currentPage} totalPages={gamelist.totalPages} setGameListLoading={() => { setGameListLoading(true); } } />
+        </div>
       )}
     </Page>
   );
