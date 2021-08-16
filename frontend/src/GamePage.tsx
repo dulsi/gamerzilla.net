@@ -33,7 +33,7 @@ export const GamePage: FC<RouteComponentProps<RouteParams>> =
     <Page>
       {game ? (
         <div>
-          <PageTitle><Fragment><img alt={`${game.name}`} src={`${relativeAPIUrl}/game/image/show?game=${game.shortname}`} />{game.name}</Fragment></PageTitle>
+          <PageTitle><Fragment><img alt={`${game.name}`} src={`${relativeAPIUrl}/gamerzilla/game/image/show?game=${game.shortname}`} />{game.name}</Fragment></PageTitle>
           <div>Achievements</div>
           <div className="TrophyList">
             <div className="TrophyListItem TrophyListRow">
@@ -43,7 +43,7 @@ export const GamePage: FC<RouteComponentProps<RouteParams>> =
             </div>
             {game.trophy.map(trophy => (
               <div key={trophy.trophy_name} className="TrophyListItem TrophyListRow">
-                <div className="TrophyListColumn TrophyListStatus"><img alt={`${trophy.achieved === "1"? "Achieved": "Not Achieved"}`} src={`${relativeAPIUrl}/trophy/image/show?game=${game.shortname}&trophy=${trophy.trophy_name}&achieved=${trophy.achieved}`} /></div>
+                <div className="TrophyListColumn TrophyListStatus"><img alt={`${trophy.achieved === "1"? "Achieved": "Not Achieved"}`} src={`${relativeAPIUrl}/gamerzilla/trophy/image/show?game=${game.shortname}&trophy=${trophy.trophy_name}&achieved=${trophy.achieved}`} /></div>
                 <div className="TrophyListColumn TrophyListTitle">{trophy.trophy_name}</div>
                 <div className="TrophyListColumn TrophyListProgress">{trophy.progress}/{trophy.max_progress}</div>
                 <div className="TrophyListColumn TrophyDescription">{trophy.trophy_desc}</div>

@@ -30,7 +30,6 @@ export const GamesPage: FC<RouteComponentProps<RouteParams>> =
     };
     doGetGameList();
   });
-  console.log("Render");
   return (
     <Page>
       <div className="GamesPageHeader">

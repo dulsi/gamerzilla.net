@@ -4,7 +4,9 @@ using System.Data.Common;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
@@ -38,16 +40,30 @@ namespace backend.Controllers
             _userService = userService;
         }
 
+        private void ValidateClaim()
+        {
+                try
+                {
+                    _userService.ValidateClaim(User.Identity as ClaimsIdentity);
+                }
+                catch (System.Exception) { }
+        }
+
+        [Authorize]
         [Route("games")]
+        [AllowAnonymous]
         public GameSummary GetGames1(string username, int pagesize = 20, int currentpage = 0)
         {
             int userId = 0;
+            ValidateClaim();
             if (username != null)
             {
-                userId = _userService.findUser(username);
+                userId = _userService.FindUser(username);
             }
             else
+            {
                 userId = _sessionContext.UserId;
+            }
             DbConnection connection = _context.Database.GetDbConnection();
             GameSummary result = new GameSummary();
             result.currentPage = currentpage;
@@ -150,13 +166,16 @@ namespace backend.Controllers
             return result;
         }
 
+        [Authorize]
         [Route("game")]
+        [AllowAnonymous]
         public GameApi1 GetGame1(string game, string username)
         {
             int userId = 0;
+            ValidateClaim();
             if (username != null)
             {
-                userId = _userService.findUser(username);
+                userId = _userService.FindUser(username);
             }
             else
                 userId = _sessionContext.UserId;

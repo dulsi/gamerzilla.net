@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import { SignInPage } from './SignInPage';
+import { SignInPageWithRouter as SignInPage } from './SignInPage';
 import { HomePage } from './HomePage';
 import { GamePage } from './GamePage';
 import { NotFoundPage } from './NotFoundPage';

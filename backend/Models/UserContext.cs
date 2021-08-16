@@ -9,7 +9,7 @@ namespace backend.Models
 {
     public partial class UserContext : DbContext
     {
-        public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<UserInfo> Users { get; set; }
 
         public UserContext(DbContextOptions<UserContext> options) : base(options) { }
     }

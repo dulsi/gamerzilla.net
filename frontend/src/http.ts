@@ -19,6 +19,7 @@ export const http = <REQB, RESB>(
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: "include",
       body: config.body ? JSON.stringify(config.body) : undefined,
     });
     if (config.accessToken) {

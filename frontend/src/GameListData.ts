@@ -50,7 +50,7 @@ export const getGameList = async (userName: string, page: number):
         undefined,
         GameSummary
       >({
-        path: '/games?username=' + userName + '&currentpage=' + page,
+        path: '/gamerzilla/games?username=' + userName + '&currentpage=' + page,
       });
       if (result.parsedBody) {
         return result.parsedBody;
@@ -70,7 +70,7 @@ export const getGame = async (userName: string, shortName: string):
         undefined,
         GameData
       >({
-        path: '/game?game=' + shortName + '&username=' + userName,
+        path: '/gamerzilla/game?game=' + shortName + '&username=' + userName,
       });
       if (result.parsedBody) {
         return result.parsedBody;
