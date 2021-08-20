@@ -84,7 +84,7 @@ directly in the database.
 Other Linux distributions should be largely the same as Fedora. The
 package manager may be different and dotnet may or may not be packaged.
 
-## What if you want you don't want it to be the root?
+## What if you want you don't want it to be the web root?
 
 We have not tested this yet. It should be as simple as updating
 src/AppSettings.ts to have the additional path before /api and modifying
