@@ -1,0 +1,16 @@
+[Unit]
+Description=Open source game achievement system
+
+[Service]
+WorkingDirectory=/var/www/gamerzilla.net
+ExecStart=/usr/bin/dotnet /var/www/gamerzilla.net/backend.dll
+Restart=always
+# Restart service after 10 seconds if the dotnet service crashes:
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=gamerzilla
+User=root
+Environment=ASPNETCORE_ENVIRONMENT=Production 
+
+[Install]
+WantedBy=multi-user.target
