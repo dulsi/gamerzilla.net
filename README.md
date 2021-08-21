@@ -97,3 +97,11 @@ package manager may be different and dotnet may or may not be packaged.
 We have not tested this yet. It should be as simple as updating
 src/AppSettings.ts to have the additional path before /api and modifying
 the /etc/http/conf.d/gamerzilla.conf rule.
+
+## Development setup
+
+To modify Gamerzilla.Net, you clone the repository. You still run 'npm
+install' in the frontend directory but most of the other setup is
+skipped. To start the frontend you run 'npm start'. To start the backend
+you run 'dotnet run' from the backend directory. You will still need to
+create the user manually.
