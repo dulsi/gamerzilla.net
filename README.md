@@ -6,6 +6,14 @@ Setting up Gamerzilla.Net is currently more complex than we would like.
 We appoligize for this situation and will be working to correct this in
 the future.
 
+We need some software installed before installing Gamerzilla.Net. If you
+intend to access this machine from other machines you will either need to
+disable the firewalld or configure it to allow port 80 through.
+
+```
+dnf install dotnet httpd npm
+```
+
 Clone the git repository with:
 
 ```
@@ -26,14 +34,14 @@ the files to the web root.
 ```
 npm run build
 cp -r build/* /var/www/html
+cp .htaccess /var/www/html
 ```
 
-For the backend, we need dotnet installed. Then we can build and copy
-the published files. (This assumes .net 5. The directory in Release may
-change with other .net versions.)
+For the backend, we can build and copy the published files. (This
+assumes .net 5. The directory in Release may change with other .net
+versions.)
 
 ```
-dnf install dotnet
 mkdir /var/www/gamerzilla.net
 cd ../backend
 dotnet publish --configuration Release
