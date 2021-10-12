@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
@@ -20,6 +21,7 @@ using backend.Models;
 using backend.Filters;
 using backend.Context;
 using backend.Service;
+using backend.Settings;
 
 namespace backend.Controllers
 {
@@ -31,14 +33,16 @@ namespace backend.Controllers
         private readonly UserContext _context;
         private readonly SessionContext _sessionContext;
         private readonly UserService _userService;
+        private readonly RegistrationOptions _options;
 
-        public UserController(ILogger<UserController> logger, UserContext context, SessionContext sessionContext, UserService userService)
+        public UserController(ILogger<UserController> logger, UserContext context, SessionContext sessionContext, UserService userService, IOptions<RegistrationOptions> options)
         {
             _logger = logger;
             _context = context;
             _context.Database.EnsureCreated();
             _sessionContext = sessionContext;
             _userService = userService;
+            _options = options.Value;
         }
 
         [Authorize]
@@ -77,7 +81,6 @@ namespace backend.Controllers
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] LoginInfo login)
         {
-            _logger.LogInformation(login.username + " " + login.password);
             if (!_userService.IsValidUser(login.username, login.password))
                 return BadRequest();
 
@@ -90,6 +93,23 @@ namespace backend.Controllers
             await Request.HttpContext.SignInAsync("Cookies", claimsPrincipal);
             _userService.ValidateClaim(claimsIdentity);
             return Ok(_userService.GetCurrentUser());
+        }
+
+        [HttpPost]
+        [Route("register")]
+        public async Task<IActionResult> Register([FromBody] LoginInfo login)
+        {
+            if (_options.Allow == false)
+                return BadRequest();
+            var u = _userService.RegisterUser(login.username, login.password);
+            return Ok(u);
+        }
+
+        [HttpGet]
+        [Route("canregister")]
+        public async Task<IActionResult> CabRegister()
+        {
+            return Ok(_options.Allow);
         }
 
         [Authorize]

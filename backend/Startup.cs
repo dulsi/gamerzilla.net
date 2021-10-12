@@ -16,9 +16,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Sqlite;
+using Microsoft.Extensions.Options;
 using backend.Models;
 using backend.Context;
 using backend.Service;
+using backend.Settings;
 
 namespace backend
 {
@@ -40,6 +42,8 @@ namespace backend
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "backend", Version = "v1" });
             });
+            services.AddOptions<RegistrationOptions>()
+                .Bind(Configuration.GetSection("RegistrationOptions"));
             services.AddDbContext<GamerzillaContext>(
                 options => options.UseSqlite(Configuration["ConnectionStrings:TrophyConnection"]));
             services.AddDbContext<UserContext>(

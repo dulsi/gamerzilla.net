@@ -1,15 +1,31 @@
-import { ChangeEvent, FC, FormEvent, useState } from 'react';
+import { ChangeEvent, FC, FormEvent, useState, useEffect } from 'react';
 import {
   RouteComponentProps,
   withRouter,
+  Link
   } from 'react-router-dom';
 import { Page } from './Page';
-import { userLogin, UserData } from './User';
+import { userLogin, UserData, canRegister } from './User';
 
 export const SignInPage: FC<RouteComponentProps> = ({
   history,
   location,
 }) => {
+  const [canregister, setCanregister]
+    = useState<boolean | null>(null);
+  const [canregisterLoading, setCanregisterLoading] = useState(true);
+  useEffect(() => {
+    const doGetCanregister = async () => {
+      if (canregisterLoading)
+      {
+        const b = await canRegister();
+        setCanregister(b);
+        setCanregisterLoading(false);
+      }
+    };
+    doGetCanregister();
+  });
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
@@ -26,9 +42,11 @@ export const SignInPage: FC<RouteComponentProps> = ({
 
   return <Page title="Sign In">
     <form onSubmit={handleLoginSubmit}>
-      <div><input type="text" name="username" value={username} onChange={handleUsernameInputChange} /></div>
-      <div><input type="password" name="password" value={password} onChange={handlePasswordInputChange} /></div>
-      <div><button type="submit">Login</button></div>
+      <div>Username: <input type="text" name="username" value={username} onChange={handleUsernameInputChange} /></div>
+      <div>Password: <input type="password" name="password" value={password} onChange={handlePasswordInputChange} /></div>
+      <div><button type="submit">Login</button>
+        {(canregister === true) ? (<Link to="/register" className="Signin">Register</Link>):(<span></span>)}
+      </div>
     </form>
   </Page>;
 }

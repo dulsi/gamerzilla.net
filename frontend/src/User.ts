@@ -42,6 +42,29 @@ export const userLogin = async (username: string, password: string):
     }
   };
 
+  export const userRegister = async (username: string, password: string):
+  Promise<UserData> => {
+    try {
+      const postBody : LoginData = {username: username, password: password};
+      const result = await http<
+        LoginData,
+        UserData
+      >({
+        path: '/user/register',
+        method: 'post',
+        body: postBody
+      });
+      if (result.parsedBody) {
+        return result.parsedBody;
+      } else {
+        return userDataEmpty;
+      }
+    } catch (ex) {
+      console.error(ex);
+      return userDataEmpty;
+    }
+  };
+
 export const getWhoami = async ():
   Promise<UserData> => {
     try {
@@ -81,3 +104,23 @@ export const getUserList = async ():
       return [];
     }
   };
+
+export const canRegister = async ():
+Promise<boolean> => {
+  try {
+    const result = await http<
+      undefined,
+      boolean
+    >({
+      path: '/user/canregister',
+    });
+    if (result.parsedBody) {
+      return result.parsedBody;
+    } else {
+      return false;
+    }
+  } catch (ex) {
+    console.error(ex);
+    return false;
+  }
+};

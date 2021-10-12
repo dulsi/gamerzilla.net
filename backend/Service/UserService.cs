@@ -1,8 +1,10 @@
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using backend.Models;
 using backend.Context;
+using backend.Settings;
 
 namespace backend.Service
 {
@@ -10,12 +12,14 @@ namespace backend.Service
     {
         SessionContext _sessionContext;
         UserContext _context;
+        private readonly RegistrationOptions _options;
 
-        public UserService(SessionContext sessionContext, UserContext userContext)
+        public UserService(SessionContext sessionContext, UserContext userContext, IOptions<RegistrationOptions> options)
         {
             _sessionContext = sessionContext;
             _context = userContext;
             _context.Database.EnsureCreated();
+            _options = options.Value;
         }
 
         public bool IsValidUser(string userName, string password)
@@ -56,6 +60,19 @@ namespace backend.Service
         {
             UserInfo user = _context.Users.Find(_sessionContext.UserId);
             user.Password = "";
+            return user;
+        }
+        
+        public UserInfo RegisterUser(string userName, string password)
+        {
+            UserInfo user = new UserInfo();
+            user.UserName = userName;
+            user.Password = password;
+            user.Approved = !_options.RequireApproval;
+            user.Visible = false;
+            user.Admin = false;
+            _context.Users.Add(user);
+            _context.SaveChanges();
             return user;
         }
 
