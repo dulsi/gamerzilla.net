@@ -33,8 +33,9 @@ the files to the web root.
 
 ```
 npm run build
-cp -r build/* /var/www/html
-cp .htaccess /var/www/html
+mkdir /var/www/html/trophy
+cp -r build/* /var/www/html/trophy
+cp .htaccess /var/www/html/trophy
 ```
 
 For the backend, we can build and copy the published files. (This
@@ -69,7 +70,7 @@ systemctl restart httpd
 ```
 
 At this point the system is running but has no users. Connect to the
-website by going to http://localhost/. Click on sign in. Type in
+website by going to http://localhost/trophy/. Click on sign in. Type in
 whatever for username and password. That will cause the two sqlite
 databases to be created. Go to command line and connect to the User,db:
 
@@ -92,11 +93,13 @@ directly in the database.
 Other Linux distributions should be largely the same as Fedora. The
 package manager may be different and dotnet may or may not be packaged.
 
-## What if you want you don't want it to be the web root?
+## What if you want you don't want it to be in /trophy and /api?
 
-We have not tested this yet. It should be as simple as updating
+We have not tested this yet. For /api, it should be as simple as updating
 src/AppSettings.ts to have the additional path before /api and modifying
 the /etc/http/conf.d/gamerzilla.conf rule.
+
+For /trophy, you need to modify the basename in src/App.tsx.
 
 ## Development setup
 

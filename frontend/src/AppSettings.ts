@@ -1,4 +1,4 @@
-export const server = 'http://' + window.location.hostname + ':5000';
+export const server = window.location.protocol + '//' + window.location.hostname + ':5000';
 
 export const webAPIUrl = `${server}/api`;
 
