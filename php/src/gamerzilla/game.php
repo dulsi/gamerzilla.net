@@ -32,7 +32,7 @@ if ($game->execute()) {
 	if ($row = $game->fetch()) {
 		$result["shortname"] = $row["ShortName"];
 		$result["name"] = $row["GameName"];
-		$result["version"] = $row["VersionNum"];
+		$result["version"] = (string)$row["VersionNum"];
 		$id = $row["Id"];
 	}
 	$result["trophy"] = array();

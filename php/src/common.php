@@ -43,4 +43,24 @@ function findUser($username) {
 	return 0;
 }
 
+function addUserStat($db, $gameid, $userid, $trophyid, $achieved, $progress) {
+	$statAdd = $db->prepare("insert into userstat(gameid, userid, trophyid, achieved, progress) values (:GAME, :USERID, :TROPHY, :ACHIEVED, :PROGRESS)");
+	$statAdd->bindValue(':GAME', $gameid);
+	$statAdd->bindValue(':USERID', $userid);
+	$statAdd->bindValue(':TROPHY', $trophyid);
+	$statAdd->bindValue(':ACHIEVED', $achieved);
+	$statAdd->bindValue(':PROGRESS', $progress);
+	$statAdd->execute();
+}
+
+function updateUserStat($db, $gameid, $userid, $trophyid, $achieved, $progress) {
+	$statUpd = $db->prepare("update userstat set achieved = :ACHIEVED, progress = :PROGRESS WHERE gameid = :GAME and userid = :USERID and trophyid = :TROPHY");
+	$statUpd->bindValue(':GAME', $gameid);
+	$statUpd->bindValue(':USERID', $userid);
+	$statUpd->bindValue(':TROPHY', $trophyid);
+	$statUpd->bindValue(':ACHIEVED', $achieved);
+	$statUpd->bindValue(':PROGRESS', $progress);
+	$statUpd->execute();
+}
+
 ?>
