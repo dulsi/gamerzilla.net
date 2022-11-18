@@ -1,10 +1,10 @@
 <?php
 function getDB() {
-	return 	new PDO("sqlite:" . dirname(__FILE__) . "/db/Trophy.db");
+	return 	new PDO("sqlite:" . dirname(__FILE__) . "/../db/Trophy.db");
 }
 
 function getUserDB() {
-	return 	new PDO("sqlite:" . dirname(__FILE__) . "/db/User.db");
+	return 	new PDO("sqlite:" . dirname(__FILE__) . "/../db/User.db");
 }
 
 function isAuthorized() {
