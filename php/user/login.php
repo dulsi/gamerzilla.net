@@ -1,13 +1,17 @@
 <?php
 header("Access-Control-Allow-Origin: *");
-require_once(dirname(__FILE__) . "/../../common.php");
-if (!isAuthorized()) {
+require_once(dirname(__FILE__) . "/../common.php");
+$data = json_decode(file_get_contents('php://input'), true);
+$userid = authorize($data["username"], $data["password"]);
+if ($userid == 0) {
 	http_response_code(401);
 	echo "401 Unauthorized";
 	die();
 }
 header('Content-Type: application/json; charset=utf-8');
-$result = array();
+session_start();
+$_SESSION['id'] = $userid;
+
 $db = getUserDB();
 $user = $db->prepare("select * from user u where u.id = :USERID");
 $user->bindValue(':USERID', $_SESSION['id']);
