@@ -13,13 +13,14 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 		$userid = $_SESSION['id'];
 	}
 }
-else if (isAuthorized()) {
-	$userid = $_SESSION['id'];
-}
 else {
-	http_response_code(401);
-	echo "401 Unauthorized";
-	die();
+	$userid = authorize($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
+	if ($userid == 0) {
+		header('WWW-Authenticate: Basic');
+		http_response_code(401);
+		echo "401 Unauthorized";
+		die();
+	}
 }
 
 $result = array();

@@ -15,6 +15,19 @@ function isAuthorized() {
 		return false;
 }
 
+function authorize($username, $password) {
+	$userDb = getUserDB();
+	$user = $userDb->prepare("select id from user u where u.username = :NAME and u.password = :PASSWORD and u.approved = 1");
+	$user->bindValue(':NAME', $username);
+	$user->bindValue(':PASSWORD', $password);
+	if ($user->execute()) {
+		if ($row = $user->fetch()) {
+			return $row["Id"];
+		}
+	}
+	return 0;
+}
+
 function findUser($username) {
 	// Check if admin user
 	$userDb = getUserDB();
