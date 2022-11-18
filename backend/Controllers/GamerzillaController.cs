@@ -209,8 +209,8 @@ namespace backend.Controllers
         public GameApi1 AddGame([FromForm] string game)
         {
             _logger.LogInformation("AddGame");
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
             GameApi1 gameInfo1 = JsonConvert.DeserializeObject<GameApi1>(game);
+            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == gameInfo1.shortname);
             if (gameInfo != null)
             {
                 gameInfo.Trophies = _context.Trophies.Include(t => t.Stat
