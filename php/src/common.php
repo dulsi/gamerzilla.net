@@ -63,4 +63,30 @@ function updateUserStat($db, $gameid, $userid, $trophyid, $achieved, $progress) 
 	$statUpd->execute();
 }
 
+function addImage($db, $id, $trophyid, $achieved, $data) {
+	$gameAdd = $db->prepare("insert into image(gameid, trophyid, achieved, data) values (:GAME, :TROPHY, :ACHIEVED, :DATA)");
+	$gameAdd->bindValue(':GAME', $id);
+	$gameAdd->bindValue(':TROPHY', $trophyid);
+	$gameAdd->bindValue(':ACHIEVED', $achieved);
+	$gameAdd->bindValue(':DATA', $data);
+	$gameAdd->execute();
+}
+
+function resizeImage($filename, $width, $height) {
+	$image = imagecreatefrompng($filename);
+	if ($image === false) {
+		http_response_code(400);
+		die();
+	}
+	$image = imagescale($image, $width, $height);
+	if ($image === false) {
+		http_response_code(400);
+		die();
+	}
+	$stream = fopen('php://memory','r+');
+	imagepng($image, $stream);
+	rewind($stream);
+	return stream_get_contents($stream);
+}
+
 ?>

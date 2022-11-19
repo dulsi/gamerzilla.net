@@ -72,7 +72,7 @@ if ($game->execute()) {
 							$trophyUpd->bindValue(':ID', $row["Id"]);
 							$trophyUpd->execute();
 						}
-						if (($found["achieved"] != "0") || ($found["progress"] != "0")) {
+						if ((array_key_exists("achieved", $found) && $found["achieved"] != "0") || (array_key_exists("progress", $found) && $found["progress"] != "0")) {
 							if (($row["Achieved"] === null) && ($row["Progress"] == null)) {
 								addUserStat($db, $id, $userid, $row["Id"], $found["achieved"], $found["progress"]);
 							}
@@ -101,7 +101,7 @@ if ($game->execute()) {
 				$trophyAdd->bindValue(':DESC', $found["trophy_desc"]);
 				$trophyAdd->bindValue(':MAX', $found["max_progress"]);
 				$trophyAdd->execute();
-				if (($found["achieved"] != "0") || ($found["progress"] != "0")) {
+				if ((array_key_exists("achieved", $found) && $found["achieved"] != "0") || (array_key_exists("progress", $found) && $found["progress"] != "0")) {
 					$trophy = $db->prepare("select id from trophy where gameid = :GAME and trophyname = :NAME");
 					$trophy->bindValue(':GAME', $id);
 					$trophy->bindValue(':NAME', $found["trophy_name"]);

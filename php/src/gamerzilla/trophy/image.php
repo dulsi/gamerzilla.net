@@ -26,6 +26,24 @@ else {
 	http_response_code(404);
 	die();
 }
+$trophyid = -1;
+$trophy = $db->prepare("select id from trophy where gameid = :GAME and trophyname = :TROPHY");
+$trophy->bindValue(':GAME', $id);
+$trophy->bindValue(':TROPHY', $_REQUEST["trophy"]);
+if ($trophy->execute()) {
+	if ($row = $trophy->fetch()) {
+		$trophyid = $row["Id"];
+	}
+	else {
+		http_response_code(404);
+		die();
+	}
+}
+else {
+	http_response_code(404);
+	die();
+}
 
-addImage($db, $id, -1, 1, resizeImage($_FILES['imagefile']['tmp_name'], 368, 172));
+addImage($db, $id, $trophyid, 0, resizeImage($_FILES['falseimagefile']['tmp_name'], 64, 64));
+addImage($db, $id, $trophyid, 1, resizeImage($_FILES['trueimagefile']['tmp_name'], 64, 64));
 ?>
