@@ -89,4 +89,32 @@ function resizeImage($filename, $width, $height) {
 	return stream_get_contents($stream);
 }
 
+function setStat($db, $id, $trophyid, $userid, $achieved, $progress) {
+	$orig = $db->prepare("select * from userstat where gameid = :GAME and trophyid = :TROPHY and userid = :USERID");
+	$orig->bindValue(':GAME', $id);
+	$orig->bindValue(':TROPHY', $trophyid);
+	$orig->bindValue(':USERID', $userid);
+	if ($orig->execute()) {
+		if ($row = $orig->fetch()) {
+			$statUpd = $db->prepare("update userstat set achieved = :ACHIEVED, progress = :PROGRESS where id = :USERSTATID");
+			$statUpd->bindValue(':USERSTATID', $row['Id']);
+			$statUpd->bindValue(':ACHIEVED', ($achieved > $row['Achieved'] ? $achieved : $row['Achieved']));
+			$statUpd->bindValue(':GAME', ($progress > $row['Progress'] ? $progress : $row['Progress']));
+			$statUpd->execute();
+		}
+		else {
+			$statAdd = $db->prepare("insert into userstat(gameid, trophyid, userid, achieved, progress) values (:GAME, :TROPHY, :USERID, :ACHIEVED, :PROGRESS)");
+			$statAdd->bindValue(':GAME', $id);
+			$statAdd->bindValue(':TROPHY', $trophyid);
+			$statAdd->bindValue(':USERID', $userid);
+			$statAdd->bindValue(':ACHIEVED', $achieved);
+			$statAdd->bindValue(':PROGRESS', $progress);
+			$statAdd->execute();
+		}
+	}
+	else {
+		die();
+	}
+}
+
 ?>
