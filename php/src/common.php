@@ -15,27 +15,32 @@ function isAuthorized() {
 		return false;
 }
 
-function authorize($username, $password) {
+function authorize($username, $password, $requireApproved) {
 	$userDb = getUserDB();
-	$user = $userDb->prepare("select id from user u where u.username = :NAME and u.password = :PASSWORD and u.approved = 1");
+	$user = $userDb->prepare("select id, approved from user u where u.username = :NAME and u.password = :PASSWORD");
 	$user->bindValue(':NAME', $username);
 	$user->bindValue(':PASSWORD', $password);
 	if ($user->execute()) {
 		if ($row = $user->fetch()) {
-			return $row["Id"];
+			if (($requireApproved != 1) || ($row["Approved"] == 1)) {
+				return $row["Id"];
+			}
 		}
 	}
 	return 0;
 }
 
 function findUser($username) {
-	// Check if admin user
+	$admin = false;
+	if (isAuthorized()) {
+		$admin = $_SESSION['admin'];
+	}
 	$userDb = getUserDB();
 	$user = $userDb->prepare("select id,visible,approved from user u where u.username = :NAME");
 	$user->bindValue(':NAME', $username);
 	if ($user->execute()) {
 		if ($row = $user->fetch()) {
-			if ($row["Visible"] == 1 && $row["Approved"] == 1) {
+			if ($admin || ($row["Visible"] == 1 && $row["Approved"] == 1)) {
 				return $row["Id"];
 			}
 		}

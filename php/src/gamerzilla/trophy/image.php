@@ -2,7 +2,7 @@
 header("Access-Control-Allow-Origin: *");
 require_once(dirname(__FILE__) . "/../../common.php");
 
-$userid = authorize($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
+$userid = authorize($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'], 1);
 if ($userid == 0) {
 	header('WWW-Authenticate: Basic');
 	http_response_code(401);
