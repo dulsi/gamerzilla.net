@@ -20,7 +20,7 @@ if ($user->execute()) {
 	$result["id"] = $row["Id"];
 	$result["userName"] = $row["UserName"];
 	$result["password"] = "";
- $_SESSION['admin'] = ($row["Admin"] == 1 ? true: false);
+	$_SESSION['admin'] = ($row["Admin"] == 1 ? true: false);
 	$result["admin"] = $_SESSION['admin'];
 	$result["visible"] = ($row["Visible"] == 1) ? true : false;
 	$result["approved"] = ($row["Approved"] == 1) ? true : false;

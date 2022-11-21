@@ -1,4 +1,6 @@
 <?php
+require_once(dirname(__FILE__) . "/appsettings.php");
+
 function getDB() {
 	return 	new PDO("sqlite:" . dirname(__FILE__) . "/../db/Trophy.db");
 }
