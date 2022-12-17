@@ -4,6 +4,7 @@ import {
   withRouter,
   Link
   } from 'react-router-dom';
+import { Header } from './Header';
 import { Page } from './Page';
 import { userLogin, UserData, canRegister } from './User';
 
@@ -38,6 +39,7 @@ export const SignInPage: FC<RouteComponentProps> = ({
   const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const u = await userLogin(username, password);
+    window.location.assign(window.location.protocol + '//' + window.location.hostname + '/trophy');
   };
 
   return <Page title="Sign In">
