@@ -139,7 +139,7 @@ namespace backend.Controllers
                 return BadRequest();
             user.Approved = true;
             _context.SaveChanges();
-            return Ok();
+            return Ok(true);
         }
     }
 

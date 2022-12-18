@@ -10,13 +10,15 @@ export interface UserData {
   password: string;
   admin: boolean;
   visible: boolean;
+  canApprove: boolean;
 }
 
 const userDataEmpty: UserData = {
   userName: "",
   password: "",
   admin: false,
-  visible: false
+  visible: false,
+  canApprove: false
 };
 
 export const userLogin = async (username: string, password: string):
@@ -42,7 +44,7 @@ export const userLogin = async (username: string, password: string):
     }
   };
 
-  export const userRegister = async (username: string, password: string):
+export const userRegister = async (username: string, password: string):
   Promise<UserData> => {
     try {
       const postBody : LoginData = {username: username, password: password};
@@ -82,6 +84,23 @@ export const getWhoami = async ():
     } catch (ex) {
       console.error(ex);
       return userDataEmpty;
+    }
+  };
+
+
+export const approve = async (userName: string):
+  Promise<boolean> => {
+    try {
+      const result = await http<
+        undefined,
+        boolean
+      >({
+        path: '/user/approve?username=' + userName,
+      });
+      return true;
+    } catch (ex) {
+      console.error(ex);
+      return false;
     }
   };
 

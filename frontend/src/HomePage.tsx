@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Page } from './Page';
 import { getUserList, UserData } from './User';
+import { UserList } from './UserList';
 
 export const HomePage = () => {
   const [userlist, setUserList]
@@ -19,13 +20,13 @@ export const HomePage = () => {
     doGetUserList();
   });
   return (
-    <Page title="Home">
+    <Page title="User List">
       {userlist == null ? (
         <div>
         Loading...
         </div>
-      ) : userlist.map(user => (
-        <p><Link to={`/games/${user.userName}`}>{user.userName}</Link></p>)
+      ) : (
+        <UserList data={userlist || []} />
       )}
     </Page>
   );

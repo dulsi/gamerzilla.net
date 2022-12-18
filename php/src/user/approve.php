@@ -12,13 +12,15 @@ if (!$_SESSION['admin']) {
 	die();
 }
 
+$username = $_REQUEST["username"];
 $db = getUserDB();
 $user = $db->prepare("select * from user u where u.username = :NAME");
 $user->bindValue(':NAME', $username);
 if ($user->execute() && $user->fetch()) {
 	$userUpd = $db->prepare("update user set approved=1 where username = :NAME");
 	$userUpd->bindValue(':NAME', $username);
-	$userAdd->execute();
+	$userUpd->execute();
+	echo json_encode(true);
 }
 else {
 	http_response_code(400);
