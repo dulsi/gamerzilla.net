@@ -124,4 +124,8 @@ function setStat($db, $id, $trophyid, $userid, $achieved, $progress) {
 	}
 }
 
+// Check for alternate authorization header set by FastCGI et al.
+if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) && !isset($_SERVER['PHP_AUTH_USER'])) {
+	list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':' , base64_decode(substr($_SERVER['REDIRECT_HTTP_AUTHORIZATION'], 6)));
+}
 ?>
