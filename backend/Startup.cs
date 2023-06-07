@@ -51,6 +51,13 @@ namespace backend
                 services.AddDbContext<UserContext>(
                     options => options.UseSqlServer(Configuration["ConnectionStrings:UserConnection"]));
             }
+            else if ("postgresql" == Configuration["ConnectionStrings:SqlType"])
+            {
+                services.AddDbContext<GamerzillaContext>(
+                    options => options.UseNpgsql(Configuration["ConnectionStrings:TrophyConnection"]));
+                services.AddDbContext<UserContext>(
+                    options => options.UseNpgsql(Configuration["ConnectionStrings:UserConnection"]));
+            }
             else
             {
                 services.AddDbContext<GamerzillaContext>(
