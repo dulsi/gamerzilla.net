@@ -44,10 +44,20 @@ namespace backend
             });
             services.AddOptions<RegistrationOptions>()
                 .Bind(Configuration.GetSection("RegistrationOptions"));
-            services.AddDbContext<GamerzillaContext>(
-                options => options.UseSqlite(Configuration["ConnectionStrings:TrophyConnection"]));
-            services.AddDbContext<UserContext>(
-                options => options.UseSqlite(Configuration["ConnectionStrings:UserConnection"]));
+            if ("sqlserver" == Configuration["ConnectionStrings:SqlType"])
+            {
+                services.AddDbContext<GamerzillaContext>(
+                    options => options.UseSqlServer(Configuration["ConnectionStrings:TrophyConnection"]));
+                services.AddDbContext<UserContext>(
+                    options => options.UseSqlServer(Configuration["ConnectionStrings:UserConnection"]));
+            }
+            else
+            {
+                services.AddDbContext<GamerzillaContext>(
+                    options => options.UseSqlite(Configuration["ConnectionStrings:TrophyConnection"]));
+                services.AddDbContext<UserContext>(
+                    options => options.UseSqlite(Configuration["ConnectionStrings:UserConnection"]));
+            }
             services.AddScoped<SessionContext>();
             services.AddScoped<UserService>();
             services.AddCors(options =>
