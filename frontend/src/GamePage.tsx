@@ -45,7 +45,7 @@ export const GamePage: FC<RouteComponentProps<RouteParams>> =
               <div key={trophy.trophy_name} className="TrophyListItem TrophyListRow">
                 <div className="TrophyListColumn TrophyListStatus"><img alt={`${trophy.achieved === "1"? "Achieved": "Not Achieved"}`} src={`${relativeAPIUrl}/gamerzilla/trophy/image/show?game=${game.shortname}&trophy=${trophy.trophy_name}&achieved=${trophy.achieved}`} /></div>
                 <div className="TrophyListColumn TrophyListTitle">{trophy.trophy_name}</div>
-                <div className="TrophyListColumn TrophyListProgress">{trophy.progress}/{trophy.max_progress}</div>
+                <div className="TrophyListColumn TrophyListProgress">{trophy.max_progress == "0" ? ( <div>{trophy.achieved === "1"? "Achieved": "Not Achieved"}</div> ) : ( <div>{trophy.achieved === "1"? trophy.max_progress : trophy.progress }/{trophy.max_progress}</div> ) }</div>
                 <div className="TrophyListColumn TrophyDescription">{trophy.trophy_desc}</div>
               </div>
             ))}
