@@ -2,6 +2,7 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using backend.Models;
 using backend.Context;
 using backend.Settings;
@@ -13,13 +14,15 @@ namespace backend.Service
         SessionContext _sessionContext;
         UserContext _context;
         private readonly RegistrationOptions _options;
+        ILogger<UserService> _log;
 
-        public UserService(SessionContext sessionContext, UserContext userContext, IOptions<RegistrationOptions> options)
+        public UserService(SessionContext sessionContext, UserContext userContext, IOptions<RegistrationOptions> options, ILogger<UserService> log)
         {
             _sessionContext = sessionContext;
             _context = userContext;
             _context.Database.EnsureCreated();
             _options = options.Value;
+            _log = log;
         }
 
         public bool IsValidUser(string userName, string password)
@@ -32,7 +35,25 @@ namespace backend.Service
                 return true;
             }
             else
+            {
+                if (!_context.Users.Any())
+                {
+                    if (_options.AdminUsername != "" && _options.AdminPassword != "")
+                    {
+                        user = new UserInfo();
+                        user.UserName = _options.AdminUsername;
+                        user.Password = _options.AdminPassword;
+                        user.Approved = true;
+                        user.Visible = true;
+                        user.Admin = true;
+                        _context.Users.Add(user);
+                        _context.SaveChanges();
+                        if (userName == _options.AdminUsername && password == _options.AdminPassword)
+                            return IsValidUser(userName, password);
+                    }
+                }
                 return false;
+            }
         }
 
         public int FindUser(string userName)
@@ -53,7 +74,9 @@ namespace backend.Service
                     return 0;
             }
             else
+            {
                 return 0;
+            }
         }
 
         public UserInfo GetCurrentUser()

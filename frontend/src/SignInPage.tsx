@@ -39,7 +39,7 @@ export const SignInPage: FC<RouteComponentProps> = ({
   const handleLoginSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const u = await userLogin(username, password);
-    window.location.assign(window.location.protocol + '//' + window.location.hostname + '/trophy');
+    window.location.assign(window.location.protocol + '//' + window.location.hostname + ':' + window.location.port + '/trophy');
   };
 
   return <Page title="Sign In">
