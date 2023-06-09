@@ -13,6 +13,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Npgsql;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using backend.Models;
@@ -30,6 +32,14 @@ namespace backend.Controllers
         private readonly GamerzillaContext _context;
         private readonly SessionContext _sessionContext;
         private readonly UserService _userService;
+
+        static private readonly string _getGames1Sqlite = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc limit @LIMIT offset @OFFSET";
+        static private readonly string _getGamesCountSqlite = "select count(*) from game g where g.id in (select gameid from userstat u where u.userid = @USERID)";
+        static private readonly string _getGames2Sqlite = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc";
+
+        static private readonly string _getGames1Postgres = "select \"ShortName\", \"GameName\", (select count(*) from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as earned, (select count(*) from \"Trophy\" t where g.\"Id\" = t.\"GameId\") as total_trophy, (select max(u2.\"Id\") from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as sortfield from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID) order by sortfield desc limit @LIMIT offset @OFFSET";
+        static private readonly string _getGamesCountPostgres = "select count(*) from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID)";
+        static private readonly string _getGames2Postgres = "select \"ShortName\", \"GameName\", (select count(*) from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as earned, (select count(*) from \"Trophy\" t where g.\"Id\" = t.\"GameId\") as total_trophy, (select max(u2.\"Id\") from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as sortfield from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID) order by sortfield desc";
 
         public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context, SessionContext sessionContext, UserService userService)
         {
@@ -76,10 +86,20 @@ namespace backend.Controllers
                 int totalRead = 0;
                 using (DbCommand command = connection.CreateCommand())
                 {
-                    command.CommandText = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc limit @LIMIT offset @OFFSET";
-                    command.Parameters.Add(new SqliteParameter("@USERID", userId));
-                    command.Parameters.Add(new SqliteParameter("@LIMIT", result.pageSize));
-                    command.Parameters.Add(new SqliteParameter("@OFFSET", result.currentPage * result.pageSize));
+                    if (_context.Database.IsNpgsql())
+                    {
+                        command.CommandText = _getGames1Postgres;
+                        command.Parameters.Add(new NpgsqlParameter("@USERID", userId));
+                        command.Parameters.Add(new NpgsqlParameter("@LIMIT", result.pageSize));
+                        command.Parameters.Add(new NpgsqlParameter("@OFFSET", result.currentPage * result.pageSize));
+                    }
+                    else
+                    {
+                        command.CommandText = _getGames1Sqlite;
+                        command.Parameters.Add(new SqliteParameter("@USERID", userId));
+                        command.Parameters.Add(new SqliteParameter("@LIMIT", result.pageSize));
+                        command.Parameters.Add(new SqliteParameter("@OFFSET", result.currentPage * result.pageSize));
+                    }
 
                     using (DbDataReader dataReader = command.ExecuteReader())
                         if (dataReader.HasRows)
@@ -102,8 +122,16 @@ namespace backend.Controllers
                 {
                     using (DbCommand command = connection.CreateCommand())
                     {
-                        command.CommandText = "select count(*) from game g where g.id in (select gameid from userstat u where u.userid = @USERID)";
-                        command.Parameters.Add(new SqliteParameter("@USERID", userId));
+                        if (_context.Database.IsNpgsql())
+                        {
+                            command.CommandText = _getGamesCountPostgres;
+                            command.Parameters.Add(new NpgsqlParameter("@USERID", userId));
+                        }
+                        else
+                        {
+                            command.CommandText = _getGamesCountSqlite;
+                            command.Parameters.Add(new SqliteParameter("@USERID", userId));
+                        }
 
                         using (DbDataReader dataReader = command.ExecuteReader())
                             if (dataReader.HasRows)
@@ -142,8 +170,16 @@ namespace backend.Controllers
 
                 using (DbCommand command = connection.CreateCommand())
                 {
-                    command.CommandText = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc";
-                    command.Parameters.Add(new SqliteParameter("@USERID", userId));
+                    if (_context.Database.IsNpgsql())
+                    {
+                        command.CommandText = _getGames2Postgres;
+                        command.Parameters.Add(new NpgsqlParameter("@USERID", userId));
+                    }
+                    else
+                    {
+                        command.CommandText = _getGames2Sqlite;
+                        command.Parameters.Add(new SqliteParameter("@USERID", userId));
+                    }
 
                     using (DbDataReader dataReader = command.ExecuteReader())
                         if (dataReader.HasRows)
