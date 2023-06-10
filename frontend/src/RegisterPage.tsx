@@ -1,11 +1,11 @@
-import { ChangeEvent, FC, FormEvent, useState, useEffect } from 'react';
+import { ChangeEvent, FC, FormEvent, useState } from 'react';
 import {
   RouteComponentProps,
   withRouter,
   Link
   } from 'react-router-dom';
 import { Page } from './Page';
-import { userRegister, UserData } from './User';
+import { userRegister } from './User';
 
 export const RegisterPage: FC<RouteComponentProps> = ({
   history,
@@ -28,7 +28,7 @@ export const RegisterPage: FC<RouteComponentProps> = ({
     e.preventDefault();
     alert("Hi");
     if (password === passwordVerify) {
-      const u = await userRegister(username, password);
+      await userRegister(username, password);
     }
   };
 

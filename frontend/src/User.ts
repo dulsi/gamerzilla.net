@@ -91,7 +91,7 @@ export const getWhoami = async ():
 export const approve = async (userName: string):
   Promise<boolean> => {
     try {
-      const result = await http<
+      await http<
         undefined,
         boolean
       >({

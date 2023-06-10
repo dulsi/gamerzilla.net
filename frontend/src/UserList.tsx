@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import { Link } from 'react-router-dom';
 import { UserData, approve } from './User';
-import { relativeAPIUrl } from './AppSettings';
 import './UserList.css';
 
 interface Props {
@@ -9,7 +8,7 @@ interface Props {
 }
 export const UserList: FC<Props> = ({data}) => {
   const handleApprove = async (userName : string) => {
-    const u = await approve(userName);
+    await approve(userName);
     window.location.assign(window.location.protocol + '//' + window.location.hostname + '/trophy');
   };
 
