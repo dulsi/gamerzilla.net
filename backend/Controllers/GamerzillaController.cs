@@ -443,18 +443,22 @@ namespace backend.Controllers
         
         private byte[] ResizeImage(Stream s, int w, int h)
         {
-            SixLabors.ImageSharp.Image imgOrig = SixLabors.ImageSharp.Image.Load(s, new SixLabors.ImageSharp.Formats.Png.PngDecoder());
-            SixLabors.ImageSharp.Image imgNew = imgOrig.Clone(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(w, h),
-                Mode = ResizeMode.Stretch
-            }));
             MemoryStream memStream = new MemoryStream(20000);
-            imgNew.Save(memStream, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+            s.CopyTo(memStream);
             memStream.Seek(0, SeekOrigin.Begin);
-            byte[] data = new byte[memStream.Length];
-            memStream.Read(data, 0, (int)memStream.Length);
-            return data;
+            SixLabors.ImageSharp.Image imgOrig = SixLabors.ImageSharp.Image.Load(memStream, new SixLabors.ImageSharp.Formats.Png.PngDecoder());
+            memStream.Seek(0, SeekOrigin.Begin);
+            if (imgOrig.Height != h && imgOrig.Width != w)
+            {
+                SixLabors.ImageSharp.Image imgNew = imgOrig.Clone(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(w, h),
+                    Mode = ResizeMode.Stretch
+                }));
+                imgNew.Save(memStream, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+                memStream.Seek(0, SeekOrigin.Begin);
+            }
+            return memStream.ToArray();
         }
     }
 }
