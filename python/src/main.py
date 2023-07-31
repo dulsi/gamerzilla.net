@@ -29,7 +29,6 @@ def dict_from_row(row):
         elif key != 'sortfield':
             answer[key] = str(row[key])
     return answer
-    # return dict(zip([key.replace(key[0], key[0].lower(), 1) for key in row.keys()], row))
 
 def find_user(user):
     conn = get_user_db_connection()
@@ -62,11 +61,35 @@ def game_list():
     conn.close()
     return jsonify(answer)
 
+@app.route("/api/gamerzilla/game")
+def game_data():
+    user = request.args["username"]
+    user_id = find_user(user)
+    params = { "USERID" : user_id, "GAME" : request.args["game"]}
+    conn = get_trophy_db_connection()
+    r = conn.execute("select id, shortname, gamename, versionnum from game g where g.shortname = :GAME", params).fetchone()
+    answer = { "shortname" : r["shortname"], "name" : r["gamename"], "version": r["versionnum"], "trophy": [] }
+    params["GAME"] = r["id"]
+    cur = conn.execute("select t.trophyname as trophy_name, t.trophydescription as trophy_desc, t.maxprogress as max_progress, IFNULL(s.achieved, 0) as achieved, s.progress from trophy t left outer join userstat s on t.gameid = s.gameid and t.id = s.trophyid and s.userid = :USERID where t.gameid = :GAME", params)
+    for r in cur.fetchall():
+        answer["trophy"].append(dict_from_row(r))
+    conn.close()
+    return jsonify(answer)
+
 @app.route("/api/gamerzilla/game/image/show")
 def game_image_show():
     conn = get_trophy_db_connection()
     params = { "NAME" : request.args["game"] }
     result = conn.execute("select data from image, game where image.gameid = game.id and game.shortname = :NAME and image.trophyid = -1", params).fetchone()
+    response = make_response(result["data"])
+    response.headers.set('Content-Type', 'image/png')
+    return response
+
+@app.route("/api/gamerzilla/trophy/image/show")
+def game_trophy_image_show():
+    conn = get_trophy_db_connection()
+    params = { "NAME" : request.args["game"], "TROPHY" : request.args["trophy"], "ACHIEVED" : request.args["achieved"] }
+    result = conn.execute("select data from image i, game g, trophy t where i.gameid = g.id and g.shortname = :NAME and i.trophyid = t.id and g.id = t.gameid and t.trophyname = :TROPHY and i.achieved = :ACHIEVED", params).fetchone()
     response = make_response(result["data"])
     response.headers.set('Content-Type', 'image/png')
     return response
