@@ -1,10 +1,14 @@
 import sqlite3
-from flask import Flask,jsonify,request,make_response
+from flask import Flask,jsonify,request,make_response,session,abort
 from flask_cors import CORS
+from flask_session import Session
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
 cors = CORS(app)
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
 
 boolean_keys = ['admin', 'visible', 'approved']
 
@@ -17,6 +21,23 @@ def get_trophy_db_connection():
     conn = sqlite3.connect('../db/Trophy.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+def is_authorized():
+    if 'id' in session:
+        return True
+    else:
+        return False
+
+def authorize(username, password, requireApproved):
+    conn = get_user_db_connection()
+    args = { "NAME" : username, "PASSWORD" : password }
+    r = conn.execute("select id, approved from user u where u.username = :NAME and u.password = :PASSWORD", args).fetchone()
+    answer = 0
+    if r != None:
+        if (requireApproved == 0) or (r["approved"] == 1):
+            answer = r["id"]
+    conn.close()
+    return answer
 
 def dict_from_row(row):
     answer = {}
@@ -47,6 +68,30 @@ def user_list():
         users.append(dict_from_row(r))
     conn.close()
     return jsonify(users)
+
+@app.route("/api/user/login", methods=['GET', 'POST'])
+def user_login():
+    userid = authorize(request.get_json().get("username"), request.get_json().get("password"), 0)
+    if userid == 0:
+        abort(401)
+    else:
+        session["id"] = userid
+        conn = get_user_db_connection()
+        args = { "USERID" : userid }
+        answer = dict_from_row(conn.execute('select * from user u where u.id = :USERID', args).fetchone())
+        conn.close()
+        return jsonify(answer)
+
+@app.route("/api/user/whoami")
+def user_whoami():
+    if is_authorized():
+        conn = get_user_db_connection()
+        args = { "USERID" : session["id"] }
+        answer = dict_from_row(conn.execute('select * from user u where u.id = :USERID', args).fetchone())
+        conn.close()
+        return jsonify(answer)
+    else:
+        abort(401)
 
 @app.route("/api/gamerzilla/games")
 def game_list():
