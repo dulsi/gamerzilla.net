@@ -69,7 +69,7 @@ def user_list():
     conn.close()
     return jsonify(users)
 
-@app.route("/api/user/login", methods=['GET', 'POST'])
+@app.route("/api/user/login", methods=['POST'])
 def user_login():
     userid = authorize(request.get_json().get("username"), request.get_json().get("password"), 0)
     if userid == 0:
@@ -81,6 +81,10 @@ def user_login():
         answer = dict_from_row(conn.execute('select * from user u where u.id = :USERID', args).fetchone())
         conn.close()
         return jsonify(answer)
+
+@app.route("/api/user/canregister")
+def user_canregister():
+    return jsonify(False)
 
 @app.route("/api/user/whoami")
 def user_whoami():
@@ -106,11 +110,30 @@ def game_list():
     conn.close()
     return jsonify(answer)
 
-@app.route("/api/gamerzilla/game")
+@app.route("/api/gamerzilla/games", methods=['POST'])
+def game_list2():
+    user_id = authorize(request.authorization.username, request.authorization.password, 1)
+    if user_id == 0:
+        abort(401)
+    params = { "USERID" : user_id }
+    conn = get_trophy_db_connection()
+    cur = conn.execute("select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = :USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = :USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = :USERID) order by sortfield desc", params)
+    answer = []
+    for r in cur.fetchall():
+        answer.append(dict_from_row(r))
+    conn.close()
+    return jsonify(answer)
+
+@app.route("/api/gamerzilla/game", methods=['GET','POST'])
 def game_data():
-    user = request.args["username"]
-    user_id = find_user(user)
-    params = { "USERID" : user_id, "GAME" : request.args["game"]}
+    if request.method == 'POST':
+        user_id = authorize(request.authorization.username, request.authorization.password, 1)
+        game = request.form.get("game")
+    else:
+        user = request.args["username"]
+        user_id = find_user(user)
+        game = request.args["game"]
+    params = { "USERID" : user_id, "GAME" : game}
     conn = get_trophy_db_connection()
     r = conn.execute("select id, shortname, gamename, versionnum from game g where g.shortname = :GAME", params).fetchone()
     answer = { "shortname" : r["shortname"], "name" : r["gamename"], "version": r["versionnum"], "trophy": [] }
