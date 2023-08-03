@@ -144,19 +144,25 @@ def game_data():
     conn.close()
     return jsonify(answer)
 
-@app.route("/api/gamerzilla/game/image/show")
+@app.route("/api/gamerzilla/game/image/show", methods=['GET','POST'])
 def game_image_show():
     conn = get_trophy_db_connection()
-    params = { "NAME" : request.args["game"] }
+    if request.method == 'POST':
+        params = { "NAME" : request.form["game"] }
+    else:
+        params = { "NAME" : request.args["game"] }
     result = conn.execute("select data from image, game where image.gameid = game.id and game.shortname = :NAME and image.trophyid = -1", params).fetchone()
     response = make_response(result["data"])
     response.headers.set('Content-Type', 'image/png')
     return response
 
-@app.route("/api/gamerzilla/trophy/image/show")
+@app.route("/api/gamerzilla/trophy/image/show", methods=['GET','POST'])
 def game_trophy_image_show():
     conn = get_trophy_db_connection()
-    params = { "NAME" : request.args["game"], "TROPHY" : request.args["trophy"], "ACHIEVED" : request.args["achieved"] }
+    if request.method == 'POST':
+        params = { "NAME" : request.form["game"], "TROPHY" : request.form["trophy"], "ACHIEVED" : request.form["achieved"] }
+    else:
+        params = { "NAME" : request.args["game"], "TROPHY" : request.args["trophy"], "ACHIEVED" : request.args["achieved"] }
     result = conn.execute("select data from image i, game g, trophy t where i.gameid = g.id and g.shortname = :NAME and i.trophyid = t.id and g.id = t.gameid and t.trophyname = :TROPHY and i.achieved = :ACHIEVED", params).fetchone()
     response = make_response(result["data"])
     response.headers.set('Content-Type', 'image/png')
