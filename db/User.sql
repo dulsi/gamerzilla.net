@@ -1,0 +1,13 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "User" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_User" PRIMARY KEY AUTOINCREMENT,
+    "UserName" TEXT NOT NULL,
+    "Password" TEXT NOT NULL,
+    "Admin" INTEGER NOT NULL,
+    "Visible" INTEGER NOT NULL,
+    "Approved" INTEGER NOT NULL
+);
+DELETE FROM sqlite_sequence;
+INSERT INTO sqlite_sequence VALUES('User',0);
+COMMIT;
