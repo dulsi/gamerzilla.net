@@ -72,13 +72,13 @@ if ($game->execute()) {
 							$trophyUpd->bindValue(':ID', $row["Id"]);
 							$trophyUpd->execute();
 						}
-						if ((array_key_exists("achieved", $found) && $found["achieved"] != "0") || (array_key_exists("progress", $found) && $found["progress"] != "0")) {
-							if (($row["Achieved"] === null) && ($row["Progress"] == null)) {
-								addUserStat($db, $id, $userid, $row["Id"], $found["achieved"], $found["progress"]);
-							}
-							else {
-								updateUserStat($db, $id, $userid, $row["Id"], $found["achieved"], $found["progress"]);
-							}
+					}
+					if ((array_key_exists("achieved", $found) && $found["achieved"] != "0") || (array_key_exists("progress", $found) && $found["progress"] != "0")) {
+						if (($row["Achieved"] === null) && ($row["Progress"] == null)) {
+							addUserStat($db, $id, $userid, $row["Id"], $found["achieved"], $found["progress"]);
+						}
+						else {
+							updateUserStat($db, $id, $userid, $row["Id"], $found["achieved"], $found["progress"]);
 						}
 					}
 				}

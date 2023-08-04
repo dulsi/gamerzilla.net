@@ -1,4 +1,5 @@
 import sqlite3
+import json
 from flask import Flask,jsonify,request,make_response,session,abort
 from flask_cors import CORS
 from flask_session import Session
@@ -39,6 +40,14 @@ def authorize(username, password, requireApproved):
     conn.close()
     return answer
 
+def addUserStat(conn, gameid, userid, trophyid, achieved, progress):
+    params = { "GAME" : gameid, "USERID" : userid, "TROPHY" : trophyid, "ACHIEVED" : achieved, "PROGRESS" : progress }
+    conn.execute("insert into userstat(gameid, userid, trophyid, achieved, progress) values (:GAME, :USERID, :TROPHY, :ACHIEVED, :PROGRESS)", params)
+
+def updateUserStat(conn, gameid, userid, trophyid, achieved, progress):
+    params = { "GAME" : gameid, "USERID" : userid, "TROPHY" : trophyid, "ACHIEVED" : achieved, "PROGRESS" : progress }
+    conn.execute("update userstat set achieved = :ACHIEVED, progress = :PROGRESS WHERE gameid = :GAME and userid = :USERID and trophyid = :TROPHY", params);
+
 def dict_from_row(row):
     answer = {}
     for key in row.keys():
@@ -47,7 +56,7 @@ def dict_from_row(row):
             answer[key] = True if row[key] == 1 else False
         elif key == 'password':
             answer[key] = ''
-        elif key != 'sortfield':
+        elif key != 'sortfield' and key != 'id':
             answer[key] = str(row[key])
     return answer
 
@@ -65,7 +74,16 @@ def user_list():
     cur = conn.execute('select * from user u where (u.visible = 1 and u.approved = 1)')
     users = []
     for r in cur.fetchall():
-        users.append(dict_from_row(r))
+        u = dict_from_row(r)
+        if "admin" in session and session["admin"]:
+            if u["approved"]:
+                u["canApprove"] = False
+            else:
+                u["canApprove"] = True
+        else:
+            u["admin"] = False
+            u["canApprove"] = False
+        users.append(u)
     conn.close()
     return jsonify(users)
 
@@ -143,6 +161,63 @@ def game_data():
         answer["trophy"].append(dict_from_row(r))
     conn.close()
     return jsonify(answer)
+
+@app.route("/api/gamerzilla/game/add", methods=['POST'])
+def game_add():
+    user_id = authorize(request.authorization.username, request.authorization.password, 1)
+    if user_id == 0:
+        abort(401)
+    game_info = json.loads(request.form["game"])
+    conn = get_trophy_db_connection()
+    params = { "GAME" : game_info["shortname"] }
+    game = conn.execute("select id, shortname, gamename, versionnum from game g where g.shortname = :GAME", params).fetchone()
+    authority = 1
+    if game != None:
+        game_id = game["id"]
+        if int(game_info["version"]) > game["versionnum"]:
+            params = { "VERSION" : game_info["version"], "ID" : game_id }
+            conn.execute("update game set versionnum = :VERSION where id = :ID", params)
+            authority = 2
+        elif int(game_info["version"]) < game["versionnum"]:
+            game_info["version"] = str(game["versionnum"])
+    else:
+        params = { "SHORT" : game_info["shortname"], "NAME" : game_info["name"], "VERSION" : game_info["version"] }
+        conn.execute("insert into game(shortname, gamename, versionnum) values (:SHORT, :NAME, :VERSION)", params);
+        params = { "GAME" : game_info["shortname"] }
+        game = conn.execute("select id, shortname, gamename, versionnum from game g where g.shortname = :GAME", params).fetchone()
+        game_id = game["id"]
+    params = { "GAME" : game_id, "USERID" : user_id }
+    trophies = conn.execute("select t.id, t.trophyname, t.trophydescription, t.maxprogress, s.achieved, s.progress from trophy t left outer join userstat s on t.gameid = s.gameid and t.id = s.trophyid and s.userid = :USERID where t.gameid = :GAME", params).fetchall()
+    used = []
+    for t in trophies:
+        for t_in in game_info["trophy"]:
+            if t["trophyname"] == t_in["trophy_name"]:
+                used.append(t["trophyname"])
+                if t["trophydescription"] != t_in["trophy_desc"]:
+                    if authority == 1:
+                        t_in["trophy_desc"] = t["trophydescription"]
+                        t_in["max_progess"] = t["maxprogress"]
+                    else:
+                        params = { "DESC" : t_in["trophy_desc"], "MAX" : t_in["max_progress"], "ID" : t["id"] }
+                        conn.execute("update trophy set trophydescription = :DESC, maxprogress = :MAX where id = :ID", params)
+                if ("achieved" in t_in and t_in["achieved"] != "0") or ("progress" in t_in and t_in["progress"] != "0"):
+                    if t["achieved"] == None and t["progress"] == None:
+                        addUserStat(conn, game_id, user_id, t["id"], t_in["achieved"], t_in["progress"])
+                    else:
+                        updateUserStat(conn, game_id, user_id, t["id"], t_in["achieved"], t_in["progress"])
+        if t["trophyname"] not in used:
+            game_info["trophy"].append({ "trophy_name" : t["trophyname"], "trophy_desc" : t["trophydescription"], "achieved" : "1" if t["achieved"] == 1 else "0", "progress" : str(t["progress"]) if t.get("progress") != None else "0", "max_progress" : t["maxprogress"] })
+    for t_in in game_info["trophy"]:
+        if t_in["trophy_name"] not in used:
+            params = { "GAME" : game_id, "NAME" : t_in["trophy_name"], "DESC" : t_in["trophy_desc"], "MAX" : t_in["max_progress"] }
+            conn.execute("insert into trophy(gameid, trophyname, trophydescription, maxprogress) values (:GAME, :NAME, :DESC, :MAX)", params);
+            if ("achieved" in t_in and t_in["achieved"] != "0") or ("progress" in t_in and t_in["progress"] != "0"):
+                params = { "GAME" : game_id, "NAME" : t_in["trophy_name"] }
+                trophy_id = conn.execute("select id from trophy where gameid = :GAME and trophyname = :NAME", params).fetchone()["id"];
+                addUserStat(conn, game_id, user_id, trophy_id, t_in["achieved"], t_in["progress"]);
+    conn.commit();
+    conn.close()
+    return jsonify(game_info)
 
 @app.route("/api/gamerzilla/game/image/show", methods=['GET','POST'])
 def game_image_show():
