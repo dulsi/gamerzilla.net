@@ -27,7 +27,6 @@ if ($games->execute()) {
 	$which = 0;
 	while ($row = $games->fetch()) {
 		$result[$which] = array();
-		$result[$which]["id"] = $row["Id"];
 		$result[$which]["userName"] = $row["UserName"];
 		$result[$which]["password"] = "";
 		if ($admin) {
