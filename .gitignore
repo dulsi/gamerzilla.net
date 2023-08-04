@@ -1,0 +1,4 @@
+obj
+bin
+__pycache__
+flask_session
