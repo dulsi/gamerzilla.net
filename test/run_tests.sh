@@ -27,3 +27,7 @@ curl -s -X POST http://localhost:5000/api/gamerzilla/trophy/set --user "test:tes
 curl -s -X POST $TESTURL/api/gamerzilla/games --user "test:test" > results/games2.json
 jdiff results/games2.json expected/games2.json >diff/games2.diff
 check_jdiff diff/games2.diff "Set Trophy Test: "
+curl -s -X POST http://localhost:5000/api/gamerzilla/trophy/set/stat --user "test:test" -d 'game=platform&trophy=Collector&progress=20' >/dev/null
+curl -s -X POST http://localhost:5000/api/gamerzilla/game --user "test:test" -d 'game=platform' >results/platform1.json
+jdiff results/platform1.json expected/platform1.json >diff/platform1.diff
+check_jdiff diff/platform1.diff "Set Trophy Stat Test: "

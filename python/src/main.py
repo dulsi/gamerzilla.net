@@ -48,9 +48,9 @@ def updateUserStat(conn, gameid, userid, trophyid, achieved, progress):
     params = { "GAME" : gameid, "USERID" : userid, "TROPHY" : trophyid, "ACHIEVED" : achieved, "PROGRESS" : progress }
     conn.execute("update userstat set achieved = :ACHIEVED, progress = :PROGRESS WHERE gameid = :GAME and userid = :USERID and trophyid = :TROPHY", params);
 
-def setStat(conn, gameid, trophyid, userid, achieved, progress):
+def setStat(conn, gameid, userid, trophyid, achieved, progress):
     params = { "GAME" : gameid, "USERID" : userid, "TROPHY" : trophyid }
-    orig = conn.execute("select * from userstat where gameid = :GAME and trophyid = :TROPHY and userid = :USERID").fetchone()
+    orig = conn.execute("select * from userstat where gameid = :GAME and trophyid = :TROPHY and userid = :USERID", params).fetchone()
     if orig == None:
         addUserStat(conn, gameid, userid, trophyid, achieved, progress)
     else:
@@ -255,7 +255,23 @@ def game_trophy_set():
     game_id = conn.execute("select id from game g where g.shortname = :GAME", params).fetchone()["id"]
     params = { "GAME" : game_id, "TROPHY" : request.form["trophy"] }
     trophy_id = conn.execute("select id from trophy where gameid = :GAME and trophyname = :TROPHY", params).fetchone()["id"]
-    addUserStat(conn, game_id, user_id, trophy_id, 1, 0);
+    setStat(conn, game_id, user_id, trophy_id, 1, 0);
+    conn.commit()
+    conn.close()
+    return "OK";
+
+@app.route("/api/gamerzilla/trophy/set/stat", methods=['POST'])
+def game_trophy_set_stat():
+    user_id = authorize(request.authorization.username, request.authorization.password, 1)
+    if user_id == 0:
+        abort(401)
+    conn = get_trophy_db_connection()
+    params = { "GAME" : request.form["game"] }
+    game_id = conn.execute("select id from game g where g.shortname = :GAME", params).fetchone()["id"]
+    params = { "GAME" : game_id, "TROPHY" : request.form["trophy"] }
+    trophy = conn.execute("select id,maxprogress from trophy where gameid = :GAME and trophyname = :TROPHY", params).fetchone()
+    progress = int(request.form["progress"])
+    setStat(conn, game_id, user_id, trophy["id"], 1 if progress >= trophy["maxprogress"] else 0, progress);
     conn.commit()
     conn.close()
     return "OK";
