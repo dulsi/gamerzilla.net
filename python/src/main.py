@@ -48,6 +48,15 @@ def updateUserStat(conn, gameid, userid, trophyid, achieved, progress):
     params = { "GAME" : gameid, "USERID" : userid, "TROPHY" : trophyid, "ACHIEVED" : achieved, "PROGRESS" : progress }
     conn.execute("update userstat set achieved = :ACHIEVED, progress = :PROGRESS WHERE gameid = :GAME and userid = :USERID and trophyid = :TROPHY", params);
 
+def setStat(conn, gameid, trophyid, userid, achieved, progress):
+    params = { "GAME" : gameid, "USERID" : userid, "TROPHY" : trophyid }
+    orig = conn.execute("select * from userstat where gameid = :GAME and trophyid = :TROPHY and userid = :USERID").fetchone()
+    if orig == None:
+        addUserStat(conn, gameid, userid, trophyid, achieved, progress)
+    else:
+        params = { "USERSTATID" : orig["id"], "ACHIEVED" : achieved, "PROGRESS" : progress }
+        conn.execute("update userstat set achieved = :ACHIEVED, progress = :PROGRESS WHERE gameid = :GAME and userid = :USERID and trophyid = :TROPHY", params);
+
 def dict_from_row(row):
     answer = {}
     for key in row.keys():
@@ -97,6 +106,10 @@ def user_login():
         conn = get_user_db_connection()
         args = { "USERID" : userid }
         answer = dict_from_row(conn.execute('select * from user u where u.id = :USERID', args).fetchone())
+        if answer["admin"] == 1:
+            session["admin"] = True
+        else:
+            session["admin"] = False
         conn.close()
         return jsonify(answer)
 
@@ -229,7 +242,23 @@ def game_image_show():
     result = conn.execute("select data from image, game where image.gameid = game.id and game.shortname = :NAME and image.trophyid = -1", params).fetchone()
     response = make_response(result["data"])
     response.headers.set('Content-Type', 'image/png')
+    conn.close()
     return response
+
+@app.route("/api/gamerzilla/trophy/set", methods=['POST'])
+def game_trophy_set():
+    user_id = authorize(request.authorization.username, request.authorization.password, 1)
+    if user_id == 0:
+        abort(401)
+    conn = get_trophy_db_connection()
+    params = { "GAME" : request.form["game"] }
+    game_id = conn.execute("select id from game g where g.shortname = :GAME", params).fetchone()["id"]
+    params = { "GAME" : game_id, "TROPHY" : request.form["trophy"] }
+    trophy_id = conn.execute("select id from trophy where gameid = :GAME and trophyname = :TROPHY", params).fetchone()["id"]
+    addUserStat(conn, game_id, user_id, trophy_id, 1, 0);
+    conn.commit()
+    conn.close()
+    return "OK";
 
 @app.route("/api/gamerzilla/trophy/image/show", methods=['GET','POST'])
 def game_trophy_image_show():
@@ -241,4 +270,5 @@ def game_trophy_image_show():
     result = conn.execute("select data from image i, game g, trophy t where i.gameid = g.id and g.shortname = :NAME and i.trophyid = t.id and g.id = t.gameid and t.trophyname = :TROPHY and i.achieved = :ACHIEVED", params).fetchone()
     response = make_response(result["data"])
     response.headers.set('Content-Type', 'image/png')
+    conn.close()
     return response
