@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoMapper;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlClient;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using backend.Dto;
 using backend.Models;
 using backend.Filters;
 using backend.Context;
@@ -34,8 +36,9 @@ namespace backend.Controllers
         private readonly SessionContext _sessionContext;
         private readonly UserService _userService;
         private readonly RegistrationOptions _options;
+        private IMapper _mapper { get; }
 
-        public UserController(ILogger<UserController> logger, UserContext context, SessionContext sessionContext, UserService userService, IOptions<RegistrationOptions> options)
+        public UserController(ILogger<UserController> logger, UserContext context, SessionContext sessionContext, UserService userService, IOptions<RegistrationOptions> options, IMapper mapper)
         {
             _logger = logger;
             _context = context;
@@ -43,35 +46,38 @@ namespace backend.Controllers
             _sessionContext = sessionContext;
             _userService = userService;
             _options = options.Value;
+            _mapper = mapper;
         }
 
         [Authorize]
         [AllowAnonymous]
-        public IList<UserInfo> GetUsers()
+        public IEnumerable<UserInfoDto> GetUsers()
         {
             bool admin = false;
             try
             {
                 _userService.ValidateClaim(User.Identity as ClaimsIdentity);
-                admin = _userService.GetCurrentUser().Admin;
+                admin = _userService.GetCurrentUser().admin;
             }
             catch (System.Exception) { }
-            IList<UserInfo> res;
+            IEnumerable<UserInfoDto> res;
             if (admin)
             {
-                res = _context.Users.ToList();
-                foreach (UserInfo i in res)
+                res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.ToList());
+                foreach (UserInfoDto i in res)
                 {
-                    i.Password = "";
+                    i.password = "";
+                    i.canApprove = false;
                 }
             }
             else
             {
-                res = _context.Users.Where(u => u.Visible == true && u.Approved == true).ToList();
-                foreach (UserInfo i in res)
+                res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.Where(u => u.Visible == true && u.Approved == true).ToList());
+                foreach (UserInfoDto i in res)
                 {
-                    i.Password = "";
-                    i.Admin = false;
+                    i.password = "";
+                    i.admin = false;
+                    i.canApprove = false;
                 }
             }
             return res;
@@ -129,7 +135,7 @@ namespace backend.Controllers
             try
             {
                 _userService.ValidateClaim(User.Identity as ClaimsIdentity);
-                admin = _userService.GetCurrentUser().Admin;
+                admin = _userService.GetCurrentUser().admin;
             }
             catch (System.Exception) { }
             if (!admin)

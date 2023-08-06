@@ -90,9 +90,9 @@ namespace backend.Models
 
         public string name { get; set; }
 
-        public int earned { get; set; }
+        public string earned { get; set; }
 
-        public int total { get; set; }
+        public string total { get; set; }
     }
     
     public class GameApi1

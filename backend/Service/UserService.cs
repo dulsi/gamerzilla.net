@@ -1,8 +1,10 @@
+using AutoMapper;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using backend.Dto;
 using backend.Models;
 using backend.Context;
 using backend.Settings;
@@ -15,14 +17,16 @@ namespace backend.Service
         UserContext _context;
         private readonly RegistrationOptions _options;
         ILogger<UserService> _log;
+        IMapper _mapper { get; }
 
-        public UserService(SessionContext sessionContext, UserContext userContext, IOptions<RegistrationOptions> options, ILogger<UserService> log)
+        public UserService(SessionContext sessionContext, UserContext userContext, IOptions<RegistrationOptions> options, ILogger<UserService> log, IMapper mapper)
         {
             _sessionContext = sessionContext;
             _context = userContext;
             _context.Database.EnsureCreated();
             _options = options.Value;
             _log = log;
+            _mapper = mapper;
         }
 
         public bool IsValidUser(string userName, string password)
@@ -79,10 +83,11 @@ namespace backend.Service
             }
         }
 
-        public UserInfo GetCurrentUser()
+        public UserInfoDto GetCurrentUser()
         {
-            UserInfo user = _context.Users.Find(_sessionContext.UserId);
-            user.Password = "";
+            UserInfoDto user = _mapper.Map<UserInfoDto>(_context.Users.Find(_sessionContext.UserId));
+            user.password = "";
+            user.canApprove = false;
             return user;
         }
         

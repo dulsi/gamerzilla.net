@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Threading;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +32,7 @@ namespace backend.Controllers
         private readonly ILogger<GamerzillaController> _logger;
         private readonly GamerzillaContext _context;
         private readonly SessionContext _sessionContext;
+        private readonly GamerzillaService _gamerzillaService;
         private readonly UserService _userService;
 
         static private readonly string _getGames1Sqlite = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc limit @LIMIT offset @OFFSET";
@@ -41,12 +43,13 @@ namespace backend.Controllers
         static private readonly string _getGamesCountPostgres = "select count(*) from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID)";
         static private readonly string _getGames2Postgres = "select \"ShortName\", \"GameName\", (select count(*) from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as earned, (select count(*) from \"Trophy\" t where g.\"Id\" = t.\"GameId\") as total_trophy, (select max(u2.\"Id\") from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as sortfield from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID) order by sortfield desc";
 
-        public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context, SessionContext sessionContext, UserService userService)
+        public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context, SessionContext sessionContext, GamerzillaService gamerzillaService, UserService userService)
         {
             _logger = logger;
             _context = context;
             _context.Database.EnsureCreated();
             _sessionContext = sessionContext;
+            _gamerzillaService = gamerzillaService;
             _userService = userService;
         }
 
@@ -108,8 +111,8 @@ namespace backend.Controllers
                                 GameShort summary = new GameShort();
                                 summary.shortname = dataReader.GetString(0);
                                 summary.name = dataReader.GetString(1);
-                                summary.earned = dataReader.GetInt32(2);
-                                summary.total = dataReader.GetInt32(3);
+                                summary.earned = dataReader.GetString(2);
+                                summary.total = dataReader.GetString(3);
                                 result.games.Add(summary);
                                 totalRead++;
                             }
@@ -188,8 +191,8 @@ namespace backend.Controllers
                                 GameShort summary = new GameShort();
                                 summary.shortname = dataReader.GetString(0);
                                 summary.name = dataReader.GetString(1);
-                                summary.earned = dataReader.GetInt32(2);
-                                summary.total = dataReader.GetInt32(3);
+                                summary.earned = dataReader.GetString(2);
+                                summary.total = dataReader.GetString(3);
                                 result.Add(summary);
                             }
                 }
@@ -259,6 +262,22 @@ namespace backend.Controllers
                 gameInfo.Import(gameInfo1);
                 _context.Games.Add(gameInfo);
                 _context.SaveChanges();
+                foreach (var t in gameInfo1.trophy)
+                {
+                    int trophyId = 0;
+                    foreach (var t2 in gameInfo.Trophies)
+                    {
+                        if (t2.TrophyName == t.trophy_name)
+                        {
+                            trophyId = t2.Id;
+                            break;
+                        }
+                    }
+                    if (t.achieved == "1")
+                        _gamerzillaService.SetUserStat(gameInfo.Id, trophyId, _sessionContext.UserId, true, 0);
+                    else if (t.progress != "0")
+                        _gamerzillaService.SetUserStat(gameInfo.Id, trophyId, _sessionContext.UserId, false, Int32.Parse(t.progress));
+                }
                 return gameInfo1;
             }
         }
@@ -379,66 +398,21 @@ namespace backend.Controllers
         [Route("trophy/set")]
         public async Task<IActionResult> SetTrophy([FromForm] string game, [FromForm] string trophy)
         {
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-            if (gameInfo == null)
-                return NotFound();
-            Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
-            if (trophyInfo == null)
-                return NotFound();
-            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == _sessionContext.UserId && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
-            if (userStat != null)
-            {
-                userStat.Achieved = true;
-                _context.SaveChanges();
+            if (_gamerzillaService.SetUserStat(game, trophy, _sessionContext.UserId, true, 0))
                 return Ok();
-            }
             else
-            {
-                userStat = new UserStat();
-                userStat.GameId = gameInfo.Id;
-                userStat.TrophyId = trophyInfo.Id;
-                userStat.UserId = 1;
-                userStat.Achieved = true;
-                userStat.Progress = 0;
-                _context.UserStats.Add(userStat);
-                _context.SaveChanges();
-                return Ok();
-            }
+                return NotFound();
         }
 
         [BasicAuth]
         [HttpPost]
         [Route("trophy/set/stat")]
-        public async Task<IActionResult> AddTrophyImage([FromForm] string game, [FromForm] string trophy, [FromForm] int progress)
+        public async Task<IActionResult> SetTrophyStat([FromForm] string game, [FromForm] string trophy, [FromForm] int progress)
         {
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-            if (gameInfo == null)
-                return NotFound();
-            Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
-            if (trophyInfo == null)
-                return NotFound();
-            UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == _sessionContext.UserId && u.TrophyId == trophyInfo.Id && u.GameId == gameInfo.Id);
-            if (userStat != null)
-            {
-                if (progress > userStat.Progress)
-                {
-                    userStat.Progress = progress;
-                    _context.SaveChanges();
-                }
+            if (_gamerzillaService.SetUserStat(game, trophy, _sessionContext.UserId, false, progress))
                 return Ok();
-            }
             else
-            {
-                userStat = new UserStat();
-                userStat.GameId = gameInfo.Id;
-                userStat.TrophyId = trophyInfo.Id;
-                userStat.UserId = 1;
-                userStat.Achieved = false;
-                userStat.Progress = progress;
-                _context.UserStats.Add(userStat);
-                _context.SaveChanges();
-                return Ok();
-            }
+                return NotFound();
         }
         
         private byte[] ResizeImage(Stream s, int w, int h)
