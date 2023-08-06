@@ -1,6 +1,12 @@
 # Test Suite for Backend
 
-## Setup
+## Setup on Fedora
+
+Install some tools needed by the test suite:
+
+```
+dnf install ImageMagick python3-jsondiff curl
+```
 
 Create sqlite databases with scripts in db. Where you place the database
 depends on the backend.
