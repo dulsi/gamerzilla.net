@@ -80,7 +80,10 @@ def dict_from_row(row):
         elif key == 'password':
             answer[key] = ''
         elif key != 'sortfield' and key != 'id':
-            answer[key] = str(row[key])
+            if row[key] == None:
+                answer[key] = "0"
+            else:
+                answer[key] = str(row[key])
     return answer
 
 def find_user(user):
@@ -162,7 +165,7 @@ def game_list2():
         abort(401)
     params = { "USERID" : user_id }
     conn = get_trophy_db_connection()
-    cur = conn.execute("select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = :USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = :USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = :USERID) order by sortfield desc", params)
+    cur = conn.execute("select ShortName as shortname, gamename as name, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = :USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = :USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = :USERID) order by sortfield desc", params)
     answer = []
     for r in cur.fetchall():
         answer.append(dict_from_row(r))
@@ -181,7 +184,7 @@ def game_data():
     params = { "USERID" : user_id, "GAME" : game}
     conn = get_trophy_db_connection()
     r = conn.execute("select id, shortname, gamename, versionnum from game g where g.shortname = :GAME", params).fetchone()
-    answer = { "shortname" : r["shortname"], "name" : r["gamename"], "version": r["versionnum"], "trophy": [] }
+    answer = { "shortname" : r["shortname"], "name" : r["gamename"], "version": str(r["versionnum"]), "trophy": [] }
     params["GAME"] = r["id"]
     cur = conn.execute("select t.trophyname as trophy_name, t.trophydescription as trophy_desc, t.maxprogress as max_progress, IFNULL(s.achieved, 0) as achieved, s.progress from trophy t left outer join userstat s on t.gameid = s.gameid and t.id = s.trophyid and s.userid = :USERID where t.gameid = :GAME", params)
     for r in cur.fetchall():

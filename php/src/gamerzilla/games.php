@@ -53,8 +53,8 @@ if ($games->execute()) {
 		$result["games"][$which] = array();
 		$result["games"][$which]["shortname"] = $row["ShortName"];
 		$result["games"][$which]["name"] = $row["GameName"];
-		$result["games"][$which]["earned"] = $row[2];
-		$result["games"][$which]["total"] = $row[3];
+		$result["games"][$which]["earned"] = (string)$row[2];
+		$result["games"][$which]["total"] = (string)$row[3];
 		$which += 1;
 	}
 	if ($which >= $result["pageSize"]) {
