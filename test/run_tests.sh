@@ -31,3 +31,26 @@ curl -s -X POST http://localhost:5000/api/gamerzilla/trophy/set/stat --user "tes
 curl -s -X POST http://localhost:5000/api/gamerzilla/game --user "test:test" -d 'game=platform' >results/platform1.json
 jdiff results/platform1.json expected/platform1.json >diff/platform1.diff
 check_jdiff diff/platform1.diff "Set Trophy Stat Test: "
+curl -s -F 'imagefile=@request/test.png' -F 'game=random' http://localhost:5000/api/gamerzilla/game/image --user "test:test" >/dev/null
+curl -s -d 'game=random' http://localhost:5000/api/gamerzilla/game/image/show --user "test:test" >results/test.png
+compare -metric PSNR  results/test.png request/test.png diff/show-diff.png 2>/dev/null
+if [ $? -eq 0 ] ; then
+     echo "Set/Show Game Image Test: Success";
+else
+     echo "Set/Show Game Image Test: Failed";
+fi
+curl -s -F 'falseimagefile=@request/false.png' -F 'trueimagefile=@request/true.png' -F 'game=random' -F 'trophy=Win Game' http://localhost:5000/api/gamerzilla/trophy/image --user "test:test" >/dev/null
+curl -s -d 'game=random&trophy=Win Game&achieved=0' http://localhost:5000/api/gamerzilla/trophy/image/show --user "test:test" >results/false.png
+compare -metric PSNR  results/false.png request/false.png diff/false-diff.png 2>/dev/null
+if [ $? -eq 0 ] ; then
+     echo "Set/Show False Trophy Image Test: Success";
+else
+     echo "Set/Show False Trophy Image Test: Failed";
+fi
+curl -s -d 'game=random&trophy=Win Game&achieved=1' http://localhost:5000/api/gamerzilla/trophy/image/show --user "test:test" >results/true.png
+compare -metric PSNR  results/true.png request/true.png diff/true-diff.png 2>/dev/null
+if [ $? -eq 0 ] ; then
+     echo "Set/Show True Trophy Image Test: Success";
+else
+     echo "Set/Show True Trophy Image Test: Failed";
+fi

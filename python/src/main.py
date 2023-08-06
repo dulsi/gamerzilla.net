@@ -1,5 +1,7 @@
 import sqlite3
 import json
+from io import BytesIO
+from PIL import Image
 from flask import Flask,jsonify,request,make_response,session,abort
 from flask_cors import CORS
 from flask_session import Session
@@ -39,6 +41,18 @@ def authorize(username, password, requireApproved):
             answer = r["id"]
     conn.close()
     return answer
+
+def addImage(conn, gameid, trophyid, achieved, data):
+    params = { "GAME" : gameid, "TROPHY" : trophyid, "ACHIEVED" : achieved, "DATA" : data }
+    conn.execute("insert into image(gameid, trophyid, achieved, data) values (:GAME, :TROPHY, :ACHIEVED, :DATA)", params)
+
+def resizeImage(filename, width, height):
+    image = Image.open(filename);
+    newsize = (width, height)
+    image = image.resize(newsize);
+    temp = BytesIO()
+    image.save(temp, format="png")
+    return temp.getvalue()
 
 def addUserStat(conn, gameid, userid, trophyid, achieved, progress):
     params = { "GAME" : gameid, "USERID" : userid, "TROPHY" : trophyid, "ACHIEVED" : achieved, "PROGRESS" : progress }
@@ -228,9 +242,22 @@ def game_add():
                 params = { "GAME" : game_id, "NAME" : t_in["trophy_name"] }
                 trophy_id = conn.execute("select id from trophy where gameid = :GAME and trophyname = :NAME", params).fetchone()["id"];
                 addUserStat(conn, game_id, user_id, trophy_id, t_in["achieved"], t_in["progress"]);
-    conn.commit();
+    conn.commit()
     conn.close()
     return jsonify(game_info)
+
+@app.route("/api/gamerzilla/game/image", methods=['POST'])
+def game_image():
+    user_id = authorize(request.authorization.username, request.authorization.password, 1)
+    if user_id == 0:
+        abort(401)
+    conn = get_trophy_db_connection()
+    params = { "GAME" : request.form["game"] }
+    game_id = conn.execute("select id from game g where g.shortname = :GAME", params).fetchone()["id"]
+    addImage(conn, game_id, -1, 1, resizeImage(request.files['imagefile'].stream, 368, 172));
+    conn.commit()
+    conn.close()
+    return "OK"
 
 @app.route("/api/gamerzilla/game/image/show", methods=['GET','POST'])
 def game_image_show():
@@ -258,7 +285,7 @@ def game_trophy_set():
     setStat(conn, game_id, user_id, trophy_id, 1, 0);
     conn.commit()
     conn.close()
-    return "OK";
+    return "OK"
 
 @app.route("/api/gamerzilla/trophy/set/stat", methods=['POST'])
 def game_trophy_set_stat():
@@ -274,7 +301,23 @@ def game_trophy_set_stat():
     setStat(conn, game_id, user_id, trophy["id"], 1 if progress >= trophy["maxprogress"] else 0, progress);
     conn.commit()
     conn.close()
-    return "OK";
+    return "OK"
+
+@app.route("/api/gamerzilla/trophy/image", methods=['POST'])
+def game_trophy_image():
+    user_id = authorize(request.authorization.username, request.authorization.password, 1)
+    if user_id == 0:
+        abort(401)
+    conn = get_trophy_db_connection()
+    params = { "GAME" : request.form["game"] }
+    game_id = conn.execute("select id from game g where g.shortname = :GAME", params).fetchone()["id"]
+    params = { "GAME" : game_id, "TROPHY" : request.form["trophy"] }
+    trophy_id = conn.execute("select id from trophy where gameid = :GAME and trophyname = :TROPHY", params).fetchone()["id"]
+    addImage(conn, game_id, trophy_id, 0, resizeImage(request.files['falseimagefile'].stream, 64, 64));
+    addImage(conn, game_id, trophy_id, 1, resizeImage(request.files['trueimagefile'].stream, 64, 64));
+    conn.commit()
+    conn.close()
+    return "OK"
 
 @app.route("/api/gamerzilla/trophy/image/show", methods=['GET','POST'])
 def game_trophy_image_show():
