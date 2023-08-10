@@ -1,4 +1,5 @@
 using AutoMapper;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,41 @@ namespace backend.Service
             _options = options.Value;
             _log = log;
             _mapper = mapper;
+        }
+        
+        public bool Approve(string userName)
+        {
+            UserInfo user = _context.Users.FirstOrDefault(u => u.UserName == userName);
+            if (user == null)
+                return false;
+            user.Approved = true;
+            _context.SaveChanges();
+            return true;
+        }
+
+        public IEnumerable<UserInfoDto> GetUsers(bool admin)
+        {
+            IEnumerable<UserInfoDto> res;
+            if (admin)
+            {
+                res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.ToList());
+                foreach (UserInfoDto i in res)
+                {
+                    i.password = "";
+                    i.canApprove = false;
+                }
+            }
+            else
+            {
+                res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.Where(u => u.Visible == true && u.Approved == true).ToList());
+                foreach (UserInfoDto i in res)
+                {
+                    i.password = "";
+                    i.admin = false;
+                    i.canApprove = false;
+                }
+            }
+            return res;
         }
 
         public bool IsValidUser(string userName, string password)

@@ -1,23 +1,13 @@
-﻿using AutoMapper;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 using backend.Dto;
 using backend.Models;
 using backend.Filters;
@@ -32,21 +22,16 @@ namespace backend.Controllers
     public class UserController : ControllerBase
     {
         private readonly ILogger<UserController> _logger;
-        private readonly UserContext _context;
         private readonly SessionContext _sessionContext;
         private readonly UserService _userService;
         private readonly RegistrationOptions _options;
-        private IMapper _mapper { get; }
 
-        public UserController(ILogger<UserController> logger, UserContext context, SessionContext sessionContext, UserService userService, IOptions<RegistrationOptions> options, IMapper mapper)
+        public UserController(ILogger<UserController> logger, SessionContext sessionContext, UserService userService, IOptions<RegistrationOptions> options)
         {
             _logger = logger;
-            _context = context;
-            _context.Database.EnsureCreated();
             _sessionContext = sessionContext;
             _userService = userService;
             _options = options.Value;
-            _mapper = mapper;
         }
 
         [Authorize]
@@ -60,27 +45,7 @@ namespace backend.Controllers
                 admin = _userService.GetCurrentUser().admin;
             }
             catch (System.Exception) { }
-            IEnumerable<UserInfoDto> res;
-            if (admin)
-            {
-                res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.ToList());
-                foreach (UserInfoDto i in res)
-                {
-                    i.password = "";
-                    i.canApprove = false;
-                }
-            }
-            else
-            {
-                res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.Where(u => u.Visible == true && u.Approved == true).ToList());
-                foreach (UserInfoDto i in res)
-                {
-                    i.password = "";
-                    i.admin = false;
-                    i.canApprove = false;
-                }
-            }
-            return res;
+            return _userService.GetUsers(admin);
         }
 
         [HttpPost]
@@ -140,12 +105,10 @@ namespace backend.Controllers
             catch (System.Exception) { }
             if (!admin)
                 return BadRequest();
-            UserInfo user = _context.Users.FirstOrDefault(u => u.UserName == username);
-            if (user == null)
+            if (_userService.Approve(username))
+                return Ok(true);
+            else
                 return BadRequest();
-            user.Approved = true;
-            _context.SaveChanges();
-            return Ok(true);
         }
     }
 
