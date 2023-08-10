@@ -1,23 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
-using System.Data.SqlClient;
 using System.IO;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Npgsql;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 using backend.Models;
 using backend.Filters;
 using backend.Context;
@@ -30,24 +21,13 @@ namespace backend.Controllers
     public class GamerzillaController : ControllerBase
     {
         private readonly ILogger<GamerzillaController> _logger;
-        private readonly GamerzillaContext _context;
         private readonly SessionContext _sessionContext;
         private readonly GamerzillaService _gamerzillaService;
         private readonly UserService _userService;
 
-        static private readonly string _getGames1Sqlite = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc limit @LIMIT offset @OFFSET";
-        static private readonly string _getGamesCountSqlite = "select count(*) from game g where g.id in (select gameid from userstat u where u.userid = @USERID)";
-        static private readonly string _getGames2Sqlite = "select shortname, gamename, (select count(*) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as earned, (select count(*) from trophy t where g.id = t.gameid) as total_trophy, (select max(u2.id) from userstat u2 where u2.achieved = 1 and g.id = u2.gameid and u2.userid = @USERID) as sortfield from game g where g.id in (select gameid from userstat u where u.userid = @USERID) order by sortfield desc";
-
-        static private readonly string _getGames1Postgres = "select \"ShortName\", \"GameName\", (select count(*) from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as earned, (select count(*) from \"Trophy\" t where g.\"Id\" = t.\"GameId\") as total_trophy, (select max(u2.\"Id\") from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as sortfield from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID) order by sortfield desc limit @LIMIT offset @OFFSET";
-        static private readonly string _getGamesCountPostgres = "select count(*) from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID)";
-        static private readonly string _getGames2Postgres = "select \"ShortName\", \"GameName\", (select count(*) from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as earned, (select count(*) from \"Trophy\" t where g.\"Id\" = t.\"GameId\") as total_trophy, (select max(u2.\"Id\") from \"UserStat\" u2 where u2.\"Achieved\" = true and g.\"Id\" = u2.\"GameId\" and u2.\"UserId\" = @USERID) as sortfield from \"Game\" g where g.\"Id\" in (select \"GameId\" from \"UserStat\" u where u.\"UserId\" = @USERID) order by sortfield desc";
-
-        public GamerzillaController(ILogger<GamerzillaController> logger, GamerzillaContext context, SessionContext sessionContext, GamerzillaService gamerzillaService, UserService userService)
+        public GamerzillaController(ILogger<GamerzillaController> logger, SessionContext sessionContext, GamerzillaService gamerzillaService, UserService userService)
         {
             _logger = logger;
-            _context = context;
-            _context.Database.EnsureCreated();
             _sessionContext = sessionContext;
             _gamerzillaService = gamerzillaService;
             _userService = userService;
@@ -77,81 +57,7 @@ namespace backend.Controllers
             {
                 userId = _sessionContext.UserId;
             }
-            DbConnection connection = _context.Database.GetDbConnection();
-            GameSummary result = new GameSummary();
-            result.currentPage = currentpage;
-            result.pageSize = pagesize;
-
-            try
-            {
-                connection.Open();
-
-                int totalRead = 0;
-                using (DbCommand command = connection.CreateCommand())
-                {
-                    if (_context.Database.IsNpgsql())
-                    {
-                        command.CommandText = _getGames1Postgres;
-                        command.Parameters.Add(new NpgsqlParameter("@USERID", userId));
-                        command.Parameters.Add(new NpgsqlParameter("@LIMIT", result.pageSize));
-                        command.Parameters.Add(new NpgsqlParameter("@OFFSET", result.currentPage * result.pageSize));
-                    }
-                    else
-                    {
-                        command.CommandText = _getGames1Sqlite;
-                        command.Parameters.Add(new SqliteParameter("@USERID", userId));
-                        command.Parameters.Add(new SqliteParameter("@LIMIT", result.pageSize));
-                        command.Parameters.Add(new SqliteParameter("@OFFSET", result.currentPage * result.pageSize));
-                    }
-
-                    using (DbDataReader dataReader = command.ExecuteReader())
-                        if (dataReader.HasRows)
-                            while (dataReader.Read())
-                            {
-                                GameShort summary = new GameShort();
-                                summary.shortname = dataReader.GetString(0);
-                                summary.name = dataReader.GetString(1);
-                                summary.earned = dataReader.GetString(2);
-                                summary.total = dataReader.GetString(3);
-                                result.games.Add(summary);
-                                totalRead++;
-                            }
-                }
-                if (totalRead != result.pageSize)
-                {
-                    result.totalPages = result.currentPage + 1;
-                }
-                else
-                {
-                    using (DbCommand command = connection.CreateCommand())
-                    {
-                        if (_context.Database.IsNpgsql())
-                        {
-                            command.CommandText = _getGamesCountPostgres;
-                            command.Parameters.Add(new NpgsqlParameter("@USERID", userId));
-                        }
-                        else
-                        {
-                            command.CommandText = _getGamesCountSqlite;
-                            command.Parameters.Add(new SqliteParameter("@USERID", userId));
-                        }
-
-                        using (DbDataReader dataReader = command.ExecuteReader())
-                            if (dataReader.HasRows)
-                                while (dataReader.Read())
-                                {
-                                    int total = dataReader.GetInt32(0);
-                                    result.totalPages = total / result.pageSize + (total % result.pageSize > 0 ? 1 : 0);
-                                }
-                    }
-                }
-            }
-
-            catch (System.Exception) { }
-
-            finally { connection.Close(); }
-
-            return result;
+            return _gamerzillaService.GetPagedGames(userId, pagesize, currentpage);
         }
 
         [BasicAuth]
@@ -159,50 +65,7 @@ namespace backend.Controllers
         [Route("games")]
         public IList<GameShort> GetGames2()
         {
-            return GetGames(_sessionContext.UserId);
-        }
-
-        public IList<GameShort> GetGames(int userId)
-        {
-            DbConnection connection = _context.Database.GetDbConnection();
-            IList<GameShort> result = new List<GameShort>();
-
-            try
-            {
-                connection.Open();
-
-                using (DbCommand command = connection.CreateCommand())
-                {
-                    if (_context.Database.IsNpgsql())
-                    {
-                        command.CommandText = _getGames2Postgres;
-                        command.Parameters.Add(new NpgsqlParameter("@USERID", userId));
-                    }
-                    else
-                    {
-                        command.CommandText = _getGames2Sqlite;
-                        command.Parameters.Add(new SqliteParameter("@USERID", userId));
-                    }
-
-                    using (DbDataReader dataReader = command.ExecuteReader())
-                        if (dataReader.HasRows)
-                            while (dataReader.Read())
-                            {
-                                GameShort summary = new GameShort();
-                                summary.shortname = dataReader.GetString(0);
-                                summary.name = dataReader.GetString(1);
-                                summary.earned = dataReader.GetString(2);
-                                summary.total = dataReader.GetString(3);
-                                result.Add(summary);
-                            }
-                }
-            }
-
-            catch (System.Exception) { }
-
-            finally { connection.Close(); }
-
-            return result;
+            return _gamerzillaService.GetGames(_sessionContext.UserId);
         }
 
         [Authorize]
@@ -218,7 +81,7 @@ namespace backend.Controllers
             }
             else
                 userId = _sessionContext.UserId;
-            return GetGame(game, userId);
+            return _gamerzillaService.GetGame(game, userId);
         }
 
         [BasicAuth]
@@ -226,20 +89,7 @@ namespace backend.Controllers
         [Route("game")]
         public GameApi1 GetGame2([FromForm] string game)
         {
-            return GetGame(game, _sessionContext.UserId);
-        }
-
-        private GameApi1 GetGame(string game, int userId)
-        {
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-            GameApi1 gameInfo1 = null;
-            if (gameInfo != null)
-            {
-                gameInfo1 = new GameApi1();
-                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat .Where(s => s.UserId == userId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToList();
-                gameInfo.Export(gameInfo1);
-            }
-            return gameInfo1;
+            return _gamerzillaService.GetGame(game, _sessionContext.UserId);
         }
 
         [BasicAuth]
@@ -249,37 +99,7 @@ namespace backend.Controllers
         {
             _logger.LogInformation("AddGame");
             GameApi1 gameInfo1 = JsonConvert.DeserializeObject<GameApi1>(game);
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == gameInfo1.shortname);
-            if (gameInfo != null)
-            {
-                gameInfo.Trophies = _context.Trophies.Include(t => t.Stat
-                    .Where(s => s.UserId == _sessionContext.UserId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToList();
-                return gameInfo1;
-            }
-            else
-            {
-                gameInfo = new Game();
-                gameInfo.Import(gameInfo1);
-                _context.Games.Add(gameInfo);
-                _context.SaveChanges();
-                foreach (var t in gameInfo1.trophy)
-                {
-                    int trophyId = 0;
-                    foreach (var t2 in gameInfo.Trophies)
-                    {
-                        if (t2.TrophyName == t.trophy_name)
-                        {
-                            trophyId = t2.Id;
-                            break;
-                        }
-                    }
-                    if (t.achieved == "1")
-                        _gamerzillaService.SetUserStat(gameInfo.Id, trophyId, _sessionContext.UserId, true, 0);
-                    else if (t.progress != "0")
-                        _gamerzillaService.SetUserStat(gameInfo.Id, trophyId, _sessionContext.UserId, false, Int32.Parse(t.progress));
-                }
-                return gameInfo1;
-            }
+            return _gamerzillaService.AddGame(gameInfo1, _sessionContext.UserId);
         }
 
         [BasicAuth]
@@ -287,23 +107,13 @@ namespace backend.Controllers
         [Route("game/image")]
         public async Task<IActionResult> AddGameImage([FromForm] string game, [FromForm] IFormFile imagefile)
         {
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-            if (gameInfo != null)
+            using (Stream s = imagefile.OpenReadStream())
             {
-                using (Stream s = imagefile.OpenReadStream())
-                {
-                    backend.Models.Image img = new backend.Models.Image();
-                    img.GameId = gameInfo.Id;
-                    img.TrophyId = -1;
-                    img.Achieved = true;
-                    img.data = ResizeImage(s, 368, 172);
-                    _context.Images.Add(img);
-                    _context.SaveChanges();
-                }
-                return Ok();
+                if (_gamerzillaService.AddGameImage(game, s))
+                    return Ok();
+                else
+                    return NotFound();
             }
-            else
-                return NotFound();
         }
 
         [Route("game/image/show")]
@@ -321,11 +131,9 @@ namespace backend.Controllers
 
         private async Task<IActionResult> ShowGameImage(string game)
         {
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-            if (gameInfo != null)
+            var s = _gamerzillaService.GetGameImage(game);
+            if (s != null)
             {
-                backend.Models.Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == -1);
-                Stream s = new MemoryStream(img.data);
                 return new FileStreamResult(s, "image/png");
             }
             else
@@ -337,33 +145,14 @@ namespace backend.Controllers
         [Route("trophy/image")]
         public async Task<IActionResult> AddTrophyImage([FromForm] string game, [FromForm] string trophy, [FromForm] IFormFile trueimagefile, [FromForm] IFormFile falseimagefile)
         {
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-            Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
-            if (gameInfo != null)
+            using (Stream s1 = trueimagefile.OpenReadStream())
+            using (Stream s2 = falseimagefile.OpenReadStream())
             {
-                using (Stream s1 = trueimagefile.OpenReadStream())
-                {
-                    backend.Models.Image img = new backend.Models.Image();
-                    img.GameId = gameInfo.Id;
-                    img.TrophyId = trophyInfo.Id;
-                    img.Achieved = true;
-                    img.data = ResizeImage(s1, 64, 64);
-                    _context.Images.Add(img);
-                }
-                using (Stream s2 = falseimagefile.OpenReadStream())
-                {
-                    backend.Models.Image img = new backend.Models.Image();
-                    img.GameId = gameInfo.Id;
-                    img.TrophyId = trophyInfo.Id;
-                    img.Achieved = false;
-                    img.data = ResizeImage(s2, 64, 64);
-                    _context.Images.Add(img);
-                }
-                _context.SaveChanges();
-                return Ok();
+                if (_gamerzillaService.AddTrophyImage(game, trophy, s1, s2))
+                    return Ok();
+                else
+                    return NotFound();
             }
-            else
-                return NotFound();
         }
 
         [Route("trophy/image/show")]
@@ -381,12 +170,9 @@ namespace backend.Controllers
 
         private async Task<IActionResult> ShowTrophyImage(string game, string trophy, int achieved)
         {
-            Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-            Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
-            if (gameInfo != null)
+            var s = _gamerzillaService.GetTrophyImage(game, trophy, achieved);
+            if (s != null)
             {
-                backend.Models.Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == trophyInfo.Id && (i.Achieved == (achieved == 1)));
-                Stream s = new MemoryStream(img.data);
                 return new FileStreamResult(s, "image/png");
             }
             else
@@ -413,26 +199,6 @@ namespace backend.Controllers
                 return Ok();
             else
                 return NotFound();
-        }
-        
-        private byte[] ResizeImage(Stream s, int w, int h)
-        {
-            MemoryStream memStream = new MemoryStream(20000);
-            s.CopyTo(memStream);
-            memStream.Seek(0, SeekOrigin.Begin);
-            SixLabors.ImageSharp.Image imgOrig = SixLabors.ImageSharp.Image.Load(memStream, new SixLabors.ImageSharp.Formats.Png.PngDecoder());
-            memStream.Seek(0, SeekOrigin.Begin);
-            if (imgOrig.Height != h && imgOrig.Width != w)
-            {
-                SixLabors.ImageSharp.Image imgNew = imgOrig.Clone(x => x.Resize(new ResizeOptions
-                {
-                    Size = new Size(w, h),
-                    Mode = ResizeMode.Stretch
-                }));
-                imgNew.Save(memStream, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
-                memStream.Seek(0, SeekOrigin.Begin);
-            }
-            return memStream.ToArray();
         }
     }
 }
