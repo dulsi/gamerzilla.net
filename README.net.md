@@ -72,7 +72,7 @@ systemctl restart httpd
 At this point the system is running but has no users. Connect to the
 website by going to http://localhost/trophy/. Click on sign in. Type in
 whatever for username and password. That will cause the two sqlite
-databases to be created. Go to command line and connect to the User,db:
+databases to be created. Go to command line and connect to the User.db:
 
 ```
 sqlite3 /var/www/gamerzilla.net/User.db

@@ -6,6 +6,6 @@ is still in development.
 
 [Setup for .Net backend](README.net.md)
 
-Setup for PHP backend -- TODO
+[Setup for PHP backend](README.php.md)
 
 [Setup for Python backend](README.python.md)

@@ -1,6 +1,6 @@
 # Gamerzilla Python
 
-## Setup on Fedora
+## Development setup
 
 Inside the python/src directory create a virtual python environment with:
 
@@ -19,4 +19,12 @@ Run the python project in flask:
 
 ```
 python3 -m flask run
+```
+
+For the frontend you simply need to go to frontend directory and run
+these commands:
+
+```
+npm install
+npm start
 ```
