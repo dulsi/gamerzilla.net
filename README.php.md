@@ -41,8 +41,8 @@ mkdir /var/www/html/api/db
 cp db/.htaccess /var/www/html/api/db/
 sqlite3 /var/www/html/api/db/Trophy.db <db/Trophy.sql
 sqlite3 /var/www/html/api/db/User.db <db/User.sql
-chown apache:apache /var/www/html/api/db/Trophy.db
-chown apache:apache /var/www/html/api/db/User.db
+chown -R apache:apache /var/www/html/.
+chcon -t httpd_sys_rw_content_t /var/www/html/api/db -R
 ```
 
 Connect to the User.db:
