@@ -130,6 +130,11 @@ def user_login():
         conn.close()
         return jsonify(answer)
 
+@app.route("/api/user/logout")
+def user_logout():
+    session.clear()
+    return "OK"
+
 @app.route("/api/user/canregister")
 def user_canregister():
     return jsonify(False)

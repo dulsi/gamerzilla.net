@@ -15,9 +15,11 @@ Install the needed python packages with:
 pip install flask flask_session flask_cors pillow
 ```
 
-Run the python project in flask:
+Set the environment variable FLASK_APP and run the python project in
+flask:
 
 ```
+export FLASK_APP=main.py
 python3 -m flask run
 ```
 
