@@ -66,6 +66,13 @@ namespace backend.Controllers
             return Ok(_userService.GetCurrentUser());
         }
 
+        [Route("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await Request.HttpContext.SignOutAsync();
+            return Ok();
+        }
+
         [HttpPost]
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] LoginInfo login)
@@ -91,7 +98,6 @@ namespace backend.Controllers
             return Ok(_userService.GetCurrentUser());
         }
 
-
         [Authorize]
         [Route("approve")]
         public async Task<IActionResult> Approve(string username)
@@ -106,6 +112,28 @@ namespace backend.Controllers
             if (!admin)
                 return BadRequest();
             if (_userService.Approve(username))
+                return Ok(true);
+            else
+                return BadRequest();
+        }
+
+        [Authorize]
+        [Route("visible")]
+        public async Task<IActionResult> Visible(string username, int val)
+        {
+            bool admin = false;
+            string currentname = "";
+            try
+            {
+                _userService.ValidateClaim(User.Identity as ClaimsIdentity);
+                var user = _userService.GetCurrentUser();
+                admin = user.admin;
+                currentname = user.userName;
+            }
+            catch (System.Exception) { }
+            if (!admin && (username != currentname))
+                return BadRequest();
+            if (_userService.Visible(username, val))
                 return Ok(true);
             else
                 return BadRequest();

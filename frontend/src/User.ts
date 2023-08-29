@@ -44,6 +44,22 @@ export const userLogin = async (username: string, password: string):
     }
   };
 
+export const userLogout = async ():
+  Promise<boolean> => {
+    try {
+      await http<
+        undefined,
+        boolean
+      >({
+        path: '/user/logout',
+      });
+      return true;
+    } catch (ex) {
+      console.error(ex);
+      return false;
+    }
+  };
+
 export const userRegister = async (username: string, password: string):
   Promise<UserData> => {
     try {
@@ -143,3 +159,19 @@ Promise<boolean> => {
     return false;
   }
 };
+
+export const visible = async (userName: string, val: number):
+  Promise<boolean> => {
+    try {
+      await http<
+        undefined,
+        boolean
+      >({
+        path: '/user/visible?username=' + userName + '&val=' + val,
+      });
+      return true;
+    } catch (ex) {
+      console.error(ex);
+      return false;
+    }
+  };

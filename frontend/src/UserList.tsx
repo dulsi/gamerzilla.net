@@ -16,6 +16,7 @@ export const UserList: FC<Props> = ({data}) => {
     {data.map(user => (
       <div key={user.userName} className="UserListItem UserListRow">
         <div className="UserListColumn UserListName"><Link to={`/games/${user.userName}`}>{user.userName}</Link></div>
+        <div className="UserListColumn UserListVisible">{user.visible ? "" : "X" }</div>
         <div className="UserListColumn UserListAction">
           {user.canApprove ? (
             <button onClick={event => handleApprove(user.userName)}>Approve</button>
