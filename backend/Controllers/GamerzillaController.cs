@@ -33,11 +33,11 @@ namespace backend.Controllers
             _userService = userService;
         }
 
-        private void ValidateClaim()
+        private async Task ValidateClaim()
         {
                 try
                 {
-                    _userService.ValidateClaim(User.Identity as ClaimsIdentity);
+                    await _userService.ValidateClaim(User.Identity as ClaimsIdentity);
                 }
                 catch (System.Exception) { }
         }
@@ -45,10 +45,10 @@ namespace backend.Controllers
         [Authorize]
         [Route("games")]
         [AllowAnonymous]
-        public GameSummary GetGames1(string username, int pagesize = 20, int currentpage = 0)
+        public async Task<GameSummary> GetGames1(string username, int pagesize = 20, int currentpage = 0)
         {
             int userId = 0;
-            ValidateClaim();
+            await ValidateClaim();
             if (username != null)
             {
                 userId = _userService.FindUser(username);
@@ -71,10 +71,10 @@ namespace backend.Controllers
         [Authorize]
         [Route("game")]
         [AllowAnonymous]
-        public GameApi1 GetGame1(string game, string username)
+        public async Task<GameApi1> GetGame1(string game, string username)
         {
             int userId = 0;
-            ValidateClaim();
+            await ValidateClaim();
             if (username != null)
             {
                 userId = _userService.FindUser(username);
@@ -95,7 +95,7 @@ namespace backend.Controllers
         [BasicAuth]
         [HttpPost]
         [Route("game/add")]
-        public GameApi1 AddGame([FromForm] string game)
+        public Task<GameApi1> AddGame([FromForm] string game)
         {
             _logger.LogInformation("AddGame");
             GameApi1 gameInfo1 = JsonConvert.DeserializeObject<GameApi1>(game);
@@ -109,7 +109,7 @@ namespace backend.Controllers
         {
             using (Stream s = imagefile.OpenReadStream())
             {
-                if (_gamerzillaService.AddGameImage(game, s))
+                if ( await _gamerzillaService.AddGameImage(game, s))
                     return Ok();
                 else
                     return NotFound();
@@ -117,21 +117,21 @@ namespace backend.Controllers
         }
 
         [Route("game/image/show")]
-        public async Task<IActionResult> ShowGameImage1(string game)
+        public Task<IActionResult> ShowGameImage1(string game)
         {
-            return await ShowGameImage(game);
+            return ShowGameImage(game);
         }
 
         [HttpPost]
         [Route("game/image/show")]
-        public async Task<IActionResult> ShowGameImage2([FromForm] string game)
+        public Task<IActionResult> ShowGameImage2([FromForm] string game)
         {
-            return await ShowGameImage(game);
+            return ShowGameImage(game);
         }
 
         private async Task<IActionResult> ShowGameImage(string game)
         {
-            var s = _gamerzillaService.GetGameImage(game);
+            var s = await _gamerzillaService.GetGameImage(game);
             if (s != null)
             {
                 return new FileStreamResult(s, "image/png");
@@ -148,7 +148,7 @@ namespace backend.Controllers
             using (Stream s1 = trueimagefile.OpenReadStream())
             using (Stream s2 = falseimagefile.OpenReadStream())
             {
-                if (_gamerzillaService.AddTrophyImage(game, trophy, s1, s2))
+                if (await _gamerzillaService.AddTrophyImage(game, trophy, s1, s2))
                     return Ok();
                 else
                     return NotFound();
@@ -170,7 +170,7 @@ namespace backend.Controllers
 
         private async Task<IActionResult> ShowTrophyImage(string game, string trophy, int achieved)
         {
-            var s = _gamerzillaService.GetTrophyImage(game, trophy, achieved);
+            var s = await _gamerzillaService.GetTrophyImage(game, trophy, achieved);
             if (s != null)
             {
                 return new FileStreamResult(s, "image/png");
@@ -184,7 +184,7 @@ namespace backend.Controllers
         [Route("trophy/set")]
         public async Task<IActionResult> SetTrophy([FromForm] string game, [FromForm] string trophy)
         {
-            if (_gamerzillaService.SetUserStat(game, trophy, _sessionContext.UserId, true, 0))
+            if (await _gamerzillaService.SetUserStat(game, trophy, _sessionContext.UserId, true, 0))
                 return Ok();
             else
                 return NotFound();
@@ -195,7 +195,7 @@ namespace backend.Controllers
         [Route("trophy/set/stat")]
         public async Task<IActionResult> SetTrophyStat([FromForm] string game, [FromForm] string trophy, [FromForm] int progress)
         {
-            if (_gamerzillaService.SetUserStat(game, trophy, _sessionContext.UserId, false, progress))
+            if (await _gamerzillaService.SetUserStat(game, trophy, _sessionContext.UserId, false, progress))
                 return Ok();
             else
                 return NotFound();

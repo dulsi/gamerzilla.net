@@ -36,12 +36,12 @@ namespace backend.Controllers
 
         [Authorize]
         [AllowAnonymous]
-        public IEnumerable<UserInfoDto> GetUsers()
+        public async Task<IEnumerable<UserInfoDto>> GetUsers()
         {
             bool admin = false;
             try
             {
-                _userService.ValidateClaim(User.Identity as ClaimsIdentity);
+                await _userService.ValidateClaim(User.Identity as ClaimsIdentity);
                 admin = _userService.GetCurrentUser().admin;
             }
             catch (System.Exception) { }
@@ -62,7 +62,7 @@ namespace backend.Controllers
 
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
             await Request.HttpContext.SignInAsync("Cookies", claimsPrincipal);
-            _userService.ValidateClaim(claimsIdentity);
+            await _userService.ValidateClaim(claimsIdentity);
             return Ok(_userService.GetCurrentUser());
         }
 
@@ -79,13 +79,13 @@ namespace backend.Controllers
         {
             if (_options.Allow == false)
                 return BadRequest();
-            var u = _userService.RegisterUser(login.username, login.password);
+            var u = await _userService.RegisterUser(login.username, login.password);
             return Ok(u);
         }
 
         [HttpGet]
         [Route("canregister")]
-        public async Task<IActionResult> CabRegister()
+        public IActionResult CanRegister()
         {
             return Ok(_options.Allow);
         }
@@ -94,7 +94,7 @@ namespace backend.Controllers
         [Route("whoami")]
         public async Task<IActionResult> WhoAmI()
         {
-            _userService.ValidateClaim(User.Identity as ClaimsIdentity);
+            await _userService.ValidateClaim(User.Identity as ClaimsIdentity);
             return Ok(_userService.GetCurrentUser());
         }
 
@@ -105,7 +105,7 @@ namespace backend.Controllers
             bool admin = false;
             try
             {
-                _userService.ValidateClaim(User.Identity as ClaimsIdentity);
+                await _userService.ValidateClaim(User.Identity as ClaimsIdentity);
                 admin = _userService.GetCurrentUser().admin;
             }
             catch (System.Exception) { }
@@ -125,7 +125,7 @@ namespace backend.Controllers
             string currentname = "";
             try
             {
-                _userService.ValidateClaim(User.Identity as ClaimsIdentity);
+                await _userService.ValidateClaim(User.Identity as ClaimsIdentity);
                 var user = _userService.GetCurrentUser();
                 admin = user.admin;
                 currentname = user.userName;

@@ -2,6 +2,7 @@ using AutoMapper;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
@@ -127,7 +128,7 @@ public class UserService
         return user;
     }
     
-    public UserInfo RegisterUser(string userName, string password)
+    public async Task<UserInfo> RegisterUser(string userName, string password)
     {
         UserInfo user = new UserInfo();
         user.UserName = userName;
@@ -136,14 +137,14 @@ public class UserService
         user.Visible = false;
         user.Admin = false;
         _context.Users.Add(user);
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
         return user;
     }
 
-    public void ValidateClaim(ClaimsIdentity claimsIdentity)
+    public async Task ValidateClaim(ClaimsIdentity claimsIdentity)
     {
         var cookieClaim = claimsIdentity.FindFirst(ClaimTypes.Name);
-        UserInfo user = _context.Users.FirstOrDefault(g => g.UserName == cookieClaim.Value);
+        UserInfo user = await _context.Users.FirstOrDefaultAsync(g => g.UserName == cookieClaim.Value);
         if (user != null)
         {
             _sessionContext.UserName = user.UserName;

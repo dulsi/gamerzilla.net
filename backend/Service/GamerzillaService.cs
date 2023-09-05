@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -152,13 +153,13 @@ public class GamerzillaService
         return result;
     }
 
-    public GameApi1 AddGame(GameApi1 gameInfo1, int userId)
+    public async Task<GameApi1> AddGame(GameApi1 gameInfo1, int userId)
     {
-        Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == gameInfo1.shortname);
+        Game gameInfo = await _context.Games.FirstOrDefaultAsync(g => g.ShortName == gameInfo1.shortname);
         if (gameInfo != null)
         {
-            gameInfo.Trophies = _context.Trophies.Include(t => t.Stat
-                .Where(s => s.UserId == userId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToList();
+            gameInfo.Trophies = await _context.Trophies.Include(t => t.Stat
+                .Where(s => s.UserId == userId && s.GameId == gameInfo.Id) ).Where(t => t.GameId == gameInfo.Id).ToListAsync();
             return gameInfo1;
         }
         else
@@ -166,7 +167,7 @@ public class GamerzillaService
             gameInfo = new Game();
             gameInfo.Import(gameInfo1);
             _context.Games.Add(gameInfo);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             foreach (var t in gameInfo1.trophy)
             {
                 int trophyId = 0;
@@ -179,9 +180,9 @@ public class GamerzillaService
                     }
                 }
                 if (t.achieved == "1")
-                    SetUserStat(gameInfo.Id, trophyId, userId, true, 0);
+                    await SetUserStat(gameInfo.Id, trophyId, userId, true, 0);
                 else if (t.progress != "0")
-                    SetUserStat(gameInfo.Id, trophyId, userId, false, Int32.Parse(t.progress));
+                    await SetUserStat(gameInfo.Id, trophyId, userId, false, Int32.Parse(t.progress));
             }
             return gameInfo1;
         }
@@ -200,9 +201,9 @@ public class GamerzillaService
         return gameInfo1;
     }
 
-    public bool AddGameImage(string game, Stream imgFile)
+    public async Task<bool> AddGameImage(string game, Stream imgFile)
     {
-        Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
+        Game gameInfo = await _context.Games.FirstOrDefaultAsync(g => g.ShortName == game);
         if (gameInfo != null)
         {
             backend.Models.Image img = new backend.Models.Image();
@@ -211,29 +212,29 @@ public class GamerzillaService
             img.Achieved = true;
             img.data = ResizeImage(imgFile, 368, 172);
             _context.Images.Add(img);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
         else
             return false;
     }
 
-    public Stream GetGameImage(string game)
+    public async Task<Stream> GetGameImage(string game)
     {
-        Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
+        Game gameInfo = await _context.Games.FirstOrDefaultAsync(g => g.ShortName == game);
         if (gameInfo != null)
         {
-            backend.Models.Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == -1);
+            backend.Models.Image img = await _context.Images.FirstOrDefaultAsync(i => i.GameId == gameInfo.Id && i.TrophyId == -1);
             return new MemoryStream(img.data);
         }
         else
             return null;
     }
 
-    public bool AddTrophyImage(string game, string trophy, Stream trueFile, Stream falseFile)
+    public async Task<bool> AddTrophyImage(string game, string trophy, Stream trueFile, Stream falseFile)
     {
-        Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-        Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
+        Game gameInfo = await _context.Games.FirstOrDefaultAsync(g => g.ShortName == game);
+        Trophy trophyInfo = await _context.Trophies.FirstOrDefaultAsync(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
         if (gameInfo != null)
         {
             backend.Models.Image trueImg = new backend.Models.Image();
@@ -248,46 +249,45 @@ public class GamerzillaService
             falseImg.Achieved = false;
             falseImg.data = ResizeImage(falseFile, 64, 64);
             _context.Images.Add(falseImg);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
         else
             return false;
     }
 
-    public Stream GetTrophyImage(string game, string trophy, int achieved)
+    public async Task<Stream> GetTrophyImage(string game, string trophy, int achieved)
     {
-        Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
-        Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
+        Game gameInfo = await _context.Games.FirstOrDefaultAsync(g => g.ShortName == game);
+        Trophy trophyInfo = await _context.Trophies.FirstOrDefaultAsync(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
         if (gameInfo != null)
         {
-            backend.Models.Image img = _context.Images.FirstOrDefault(i => i.GameId == gameInfo.Id && i.TrophyId == trophyInfo.Id && (i.Achieved == (achieved == 1)));
+            backend.Models.Image img = await _context.Images.FirstOrDefaultAsync(i => i.GameId == gameInfo.Id && i.TrophyId == trophyInfo.Id && (i.Achieved == (achieved == 1)));
             return new MemoryStream(img.data);
         }
         else
             return null;
     }
 
-    public bool SetUserStat(string game, string trophy, int userId, bool achieved, int progress)
+    public async Task<bool> SetUserStat(string game, string trophy, int userId, bool achieved, int progress)
     {
-        Game gameInfo = _context.Games.FirstOrDefault(g => g.ShortName == game);
+        Game gameInfo = await _context.Games.FirstOrDefaultAsync(g => g.ShortName == game);
         if (gameInfo == null)
             return false;
-        Trophy trophyInfo = _context.Trophies.FirstOrDefault(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
+        Trophy trophyInfo = await _context.Trophies.FirstOrDefaultAsync(t => t.TrophyName == trophy && t.GameId == gameInfo.Id);
         if (trophyInfo == null)
             return false;
-        SetUserStat(gameInfo.Id, trophyInfo.Id, userId, achieved, progress);
+        await SetUserStat(gameInfo.Id, trophyInfo.Id, userId, achieved, progress);
         return true;
     }
 
-    public void SetUserStat(int gameId, int trophyId, int userId, bool achieved, int progress)
+    public async Task SetUserStat(int gameId, int trophyId, int userId, bool achieved, int progress)
     {
-        UserStat userStat = _context.UserStats.FirstOrDefault(u => u.UserId == userId && u.TrophyId == trophyId && u.GameId == gameId);
+        UserStat userStat = await _context.UserStats.FirstOrDefaultAsync(u => u.UserId == userId && u.TrophyId == trophyId && u.GameId == gameId);
         if (userStat != null)
         {
             userStat.Achieved = achieved;
             userStat.Progress = progress;
-            _context.SaveChanges();
         }
         else
         {
@@ -298,8 +298,8 @@ public class GamerzillaService
             userStat.Achieved = achieved;
             userStat.Progress = progress;
             _context.UserStats.Add(userStat);
-            _context.SaveChanges();
         }
+        await _context.SaveChangesAsync();
     }
 
     private byte[] ResizeImage(Stream s, int w, int h)
