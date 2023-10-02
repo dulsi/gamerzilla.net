@@ -8,6 +8,11 @@ if (!$registrationOptions['Allow']) {
 	die();
 }
 $data = json_decode(file_get_contents('php://input'), true);
+if ($data["username"] == "") {
+	http_response_code(400);
+	echo "400 Bad Request";
+	die();
+}
 header('Content-Type: application/json; charset=utf-8');
 
 $db = getUserDB();

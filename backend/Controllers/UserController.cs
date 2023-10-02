@@ -77,7 +77,7 @@ namespace backend.Controllers
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] LoginInfo login)
         {
-            if (_options.Allow == false)
+            if ((_options.Allow == false) || (login.username == ""))
                 return BadRequest();
             var u = await _userService.RegisterUser(login.username, login.password);
             return Ok(u);
