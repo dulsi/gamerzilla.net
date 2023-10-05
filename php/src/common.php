@@ -85,14 +85,20 @@ function resizeImage($filename, $width, $height) {
 		http_response_code(400);
 		die();
 	}
-	$image = imagescale($image, $width, $height);
-	if ($image === false) {
-		http_response_code(400);
-		die();
+	if ((imagesx($image) != $width) || (imagesy($image) != $height))
+	{
+		$image = imagescale($image, $width, $height);
+		if ($image === false) {
+			http_response_code(400);
+			die();
+		}
+		$stream = fopen('php://memory','r+');
+		rewind($stream);
 	}
-	$stream = fopen('php://memory','r+');
-	imagepng($image, $stream);
-	rewind($stream);
+	else
+	{
+		$stream = fopen($filename, 'r');
+	}
 	return stream_get_contents($stream);
 }
 
