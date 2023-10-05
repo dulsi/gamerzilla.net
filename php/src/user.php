@@ -17,7 +17,7 @@ if ($admin) {
 	$query = "select * from user u";
 }
 else if ($userid != -1) {
-	$query += " or userid = :USERID";
+	$query .= " or u.id = :USERID";
 }
 $games = $db->prepare($query);
 if ((!$admin) && ($userid != -1)) {
