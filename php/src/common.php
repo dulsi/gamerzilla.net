@@ -42,7 +42,7 @@ function findUser($username) {
 	$user->bindValue(':NAME', $username);
 	if ($user->execute()) {
 		if ($row = $user->fetch()) {
-			if ($admin || ($row["Visible"] == 1 && $row["Approved"] == 1)) {
+			if ($admin || ($row["Visible"] == 1 && $row["Approved"] == 1) || ($row["Id"] == $_SESSION['id'])) {
 				return $row["Id"];
 			}
 		}
