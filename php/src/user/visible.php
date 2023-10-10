@@ -9,16 +9,16 @@ if (!isAuthorized()) {
 $db = getUserDB();
 $username = $_REQUEST["username"];
 if (!$_SESSION['admin']) {
-	$id = $_SESSION['id'];
-	$user = $db->prepare("select username from user u where u.id = :ID");
-	$user->bindValue(':ID', $id);
+	$userid = $_SESSION['id'];
+	$user = $db->prepare("select username from user u where u.id = :USERID");
+	$user->bindValue(':USERID', $userid);
 	if (!$user->execute()) {
 		http_response_code(401);
 		echo "401 Unauthorized";
 		die();
 	}
 	$row = $user->fetch();
-	if ($username != $row['username']) {
+	if ($username != $row['UserName']) {
 		http_response_code(401);
 		echo "401 Unauthorized";
 		die();
