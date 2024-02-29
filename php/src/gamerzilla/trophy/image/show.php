@@ -12,7 +12,10 @@ if ($stmt->execute()) {
 	$stmt->fetch(PDO::FETCH_BOUND);
 	header('Content-Type: image/png');
 	if (version_compare(PHP_VERSION, '7.0.0') >= 0) {
-		fpassthru($lob);
+		$stream = fopen('php://memory','r+');
+		fwrite($stream, $lob);
+		rewind($stream);
+		fpassthru($stream);
 	}
 	else {
 		echo $lob;
