@@ -1,4 +1,4 @@
 <?php
-$registrationOptions['Allow'] = true;
+$registrationOptions['Allow'] = false;
 $registrationOptions['RequireApproval'] = true;
 ?>
