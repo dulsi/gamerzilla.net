@@ -1,5 +1,14 @@
+/* Update your Page.css or wherever this lives */
 .Page {
-  margin: 50px auto 20px auto;
-  padding: 30px 20px;
-  max-width: 800px;
+  margin: 0 auto 20px auto;
+  padding: 0 20px; /* Prevents cards from hitting screen edges on mobile */
+  
+  /* 1024px is a bit small for two 500px cards + gaps. 
+     Setting this to 1200px or 1400px allows 2-3 columns comfortably.
+  */
+  max-width: 1400px; 
+  
+  /* Ensures the container doesn't overflow on small phones */
+  width: 100%;
+  box-sizing: border-box;
 }

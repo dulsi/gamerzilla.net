@@ -2,3 +2,10 @@ obj
 bin
 __pycache__
 flask_session
+.vs
+*.csproj.user
+.yarn
+*.db
+*.db-shm
+*.db-wal
+dist/

@@ -31,7 +31,7 @@ $result["pageSize"] = (int)$_REQUEST["pagesize"];
 if ($result["pageSize"] == 0) {
 	$result["pageSize"] = 20;
 }
-$result["totalPages"] = $result["currentPage"] + 1; // Temporary guess
+$result["totalPages"] = $result["currentPage"] + 1; 
 $result["games"] = array();
 
 $db = getDB();

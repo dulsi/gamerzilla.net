@@ -1,13 +1,22 @@
-PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
+
 CREATE TABLE IF NOT EXISTS "User" (
-    "Id" INTEGER NOT NULL CONSTRAINT "PK_User" PRIMARY KEY AUTOINCREMENT,
-    "UserName" TEXT NOT NULL,
+    "Id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "UserName" TEXT NOT NULL UNIQUE,
     "Password" TEXT NOT NULL,
-    "Admin" INTEGER NOT NULL,
-    "Visible" INTEGER NOT NULL,
-    "Approved" INTEGER NOT NULL
+    "Email" TEXT NOT NULL,
+    
+    "PendingEmail" TEXT NULL,
+    "VerificationToken" TEXT NULL,
+    "TokenExpiration" TEXT NULL, -- SQLite stores dates as TEXT
+    
+    "Admin" INTEGER NOT NULL DEFAULT 0,     -- 0=False, 1=True
+    "Visible" INTEGER NOT NULL DEFAULT 1,   -- 1=True
+    "Approved" INTEGER NOT NULL DEFAULT 0,  -- 0=False
+    "CreatedAt" TEXT DEFAULT CURRENT_TIMESTAMP
 );
-DELETE FROM sqlite_sequence;
-INSERT INTO sqlite_sequence VALUES('User',0);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "IX_User_UserName" ON "User" ("UserName");
+CREATE UNIQUE INDEX IF NOT EXISTS "IX_User_Email" ON "User" ("Email" COLLATE NOCASE);
+
 COMMIT;

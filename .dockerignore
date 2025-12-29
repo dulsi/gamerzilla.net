@@ -1,0 +1,39 @@
+# --- System / IDE Garbage ---
+**/.dockerignore
+**/.env
+**/.git
+**/.gitignore
+**/.vs
+**/.vscode
+**/*.*proj.user
+**/.DS_Store
+**/Thumbs.db
+
+# --- Build Artifacts ---
+**/bin
+**/obj
+**/out
+**/dist
+**/build
+**/node_modules
+
+# --- Logs & Test Coverage ---
+**/*.log
+**/npm-debug.log
+**/yarn-error.log
+**/coverage/
+
+# --- Local Databases ---
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.sqlite
+
+# --- Sensitive Configs ---
+**/appsettings.Development.json
+**/secrets.json
+
+# --- Docker Files ---
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
