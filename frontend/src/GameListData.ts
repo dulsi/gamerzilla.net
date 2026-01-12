@@ -7,11 +7,15 @@ export interface GameSummary {
   games: GameListData[];
 }
 
+
+
 export interface GameListData {
+  id: number;
   shortname: string;
   name: string;
   earned: number;
   total: number;
+  ownerId: number | null;
 }
 
 export interface GameData {

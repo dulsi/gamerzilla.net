@@ -16,6 +16,8 @@ namespace backend.Models
 
         public int Id { get; set; }
 
+        public int? OwnerId { get; set; }
+
         [Required]
         [StringLength(128)]
         public string ShortName { get; set; }
@@ -86,6 +88,7 @@ namespace backend.Models
 
     public class GameShort
     {
+        public int id { get; set; }
         public string shortname { get; set; }
 
         public string name { get; set; }
@@ -93,6 +96,8 @@ namespace backend.Models
         public string earned { get; set; }
 
         public string total { get; set; }
+
+        public int? ownerId { get; set; }
     }
     
     public class GameApi1

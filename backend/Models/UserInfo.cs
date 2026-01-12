@@ -24,5 +24,9 @@ namespace backend.Models
         public bool Visible { get; set; }
 
         public bool Approved { get; set; }
+        public string Email { get; set; }
+        public string PendingEmail { get; set; }
+        public string VerificationToken { get; set; }
+        public DateTime? TokenExpiration { get; set; }
     }
 }

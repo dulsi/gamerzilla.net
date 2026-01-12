@@ -43,9 +43,10 @@ namespace backend.Controllers
         }
 
         [Authorize]
+        [HttpGet]
         [Route("games")]
         [AllowAnonymous]
-        public async Task<GameSummary> GetGames1(string username, int pagesize = 20, int currentpage = 0)
+        public async Task<GameSummary> GetGames1(string username, int pagesize = 10, int currentpage = 0)
         {
             int userId = 0;
             await ValidateClaim();
@@ -69,6 +70,7 @@ namespace backend.Controllers
         }
 
         [Authorize]
+        [HttpGet]
         [Route("game")]
         [AllowAnonymous]
         public async Task<GameApi1> GetGame1(string game, string username)
@@ -84,6 +86,64 @@ namespace backend.Controllers
             return _gamerzillaService.GetGame(game, userId);
         }
 
+        [Authorize]
+        [HttpGet("game/list/owned")]
+        
+        public async Task<IActionResult> GetMyGames([FromQuery] int pagesize = 50, [FromQuery] int currentpage = 0)
+        {
+            await ValidateClaim();
+            var user = _userService.GetCurrentUser();
+            if (user == null) return Unauthorized();
+
+            var result = await _gamerzillaService.GetOwnedGamesAsync(user.id, user.admin, pagesize, currentpage);
+
+            return Ok(result);
+        }
+
+        
+        [Authorize]
+        [HttpPost("game/transfer")]
+        public async Task<IActionResult> TransferGame([FromBody] TransferRequest req)
+        {
+            
+            
+            await ValidateClaim(); 
+            var currentUser = _userService.GetCurrentUser();
+            if (currentUser == null) return Unauthorized();
+
+            
+            int targetUserId = _userService.FindUser(req.NewOwnerUsername);
+            if (targetUserId == 0)
+            {
+                return BadRequest($"User '{req.NewOwnerUsername}' not found or not eligible.");
+            }
+
+            
+            string result = await _gamerzillaService.TransferOwnershipAsync(
+                currentUser.id,
+                currentUser.admin,
+                req.GameId,
+                targetUserId
+            );
+
+            
+            if (result == "Success")
+            {
+                return Ok($"Transferred ownership to {req.NewOwnerUsername}");
+            }
+
+            if (result == $"Verification email sent to {req.NewOwnerUsername}")
+            {
+                return Ok(result);
+            }
+
+            if (result == "Unauthorized") return Forbid();
+            if (result == "Game not found") return NotFound("Game not found.");
+
+            
+            return BadRequest(result);
+        }
+
         [BasicAuth]
         [HttpPost]
         [Route("game")]
@@ -93,30 +153,53 @@ namespace backend.Controllers
         }
 
         [BasicAuth]
-        [HttpPost]
-        [Route("game/add")]
-        public Task<GameApi1> AddGame([FromForm] string game)
+        [HttpPost("game/add")]
+        public async Task<IActionResult> AddGame([FromForm] string game)
         {
             _logger.LogInformation("AddGame");
+
+            
+            await ValidateClaim();
+            var user = _userService.GetCurrentUser();
+            if (user == null) return Unauthorized();
+
             GameApi1 gameInfo1 = JsonConvert.DeserializeObject<GameApi1>(game);
-            return _gamerzillaService.AddGame(gameInfo1, _sessionContext.UserId);
+
+            
+            var result = await _gamerzillaService.AddGame(gameInfo1, user.id, user.admin);
+
+            return Ok(result);
         }
 
         [BasicAuth]
-        [HttpPost]
-        [Route("game/image")]
-        public async Task<IActionResult> AddGameImage([FromForm] string game, [FromForm] IFormFile imagefile)
+        [HttpPost("game/image")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> AddGameImage([FromForm] GameImageUpload upload)
         {
-            using (Stream s = imagefile.OpenReadStream())
+            if (upload.ImageFile == null || upload.ImageFile.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            
+            await ValidateClaim();
+            var user = _userService.GetCurrentUser();
+            if (user == null) return Unauthorized();
+
+            using (Stream s = upload.ImageFile.OpenReadStream())
             {
-                if ( await _gamerzillaService.AddGameImage(game, s))
-                    return Ok();
-                else
-                    return NotFound();
+                
+                bool result = await _gamerzillaService.AddGameImage(
+                    upload.Game,
+                    s,
+                    user.id,
+                    user.admin
+                );
+
+                return result ? Ok() : NotFound();
             }
         }
 
         [Route("game/image/show")]
+        [HttpGet]
         public Task<IActionResult> ShowGameImage1(string game)
         {
             return ShowGameImage(game);
@@ -141,21 +224,26 @@ namespace backend.Controllers
         }
 
         [BasicAuth]
-        [HttpPost]
-        [Route("trophy/image")]
-        public async Task<IActionResult> AddTrophyImage([FromForm] string game, [FromForm] string trophy, [FromForm] IFormFile trueimagefile, [FromForm] IFormFile falseimagefile)
+        [HttpPost("trophy/image")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> AddTrophyImage([FromForm] TrophyImageUpload upload)
         {
-            using (Stream s1 = trueimagefile.OpenReadStream())
-            using (Stream s2 = falseimagefile.OpenReadStream())
+            if (upload.TrueImageFile == null || upload.TrueImageFile.Length == 0 ||
+                upload.FalseImageFile == null || upload.FalseImageFile.Length == 0)
             {
-                if (await _gamerzillaService.AddTrophyImage(game, trophy, s1, s2))
-                    return Ok();
-                else
-                    return NotFound();
+                return BadRequest("Both image files are required.");
+            }
+
+            using (Stream s1 = upload.TrueImageFile.OpenReadStream())
+            using (Stream s2 = upload.FalseImageFile.OpenReadStream())
+            {
+                bool result = await _gamerzillaService.AddTrophyImage(upload.Game, upload.Trophy, s1, s2);
+                return result ? Ok() : NotFound();
             }
         }
 
         [Route("trophy/image/show")]
+        [HttpGet]
         public async Task<IActionResult> ShowTrophyImage1(string game, string trophy, int achieved)
         {
             return await ShowTrophyImage(game, trophy, achieved);
@@ -200,5 +288,7 @@ namespace backend.Controllers
             else
                 return NotFound();
         }
+
+
     }
 }

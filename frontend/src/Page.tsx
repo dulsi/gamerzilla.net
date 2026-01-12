@@ -1,9 +1,10 @@
-import { FC } from 'react';
+import { FC, ReactNode } from 'react';
 import { PageTitle } from './PageTitle';
-import './Page.css';
+import './Page.css'
 
 interface Props {
   title?: string;
+  children?: ReactNode;
 }
 export const Page: FC<Props> = ({ title, children }) => (
   <div className="Page">

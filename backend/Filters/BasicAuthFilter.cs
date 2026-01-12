@@ -54,7 +54,7 @@ namespace backend.Filters
 
         private void ReturnUnauthorizedResult(AuthorizationFilterContext context)
         {
-            // Return 401 and a basic authentication challenge (causes browser to show login dialog)
+            
             context.HttpContext.Response.Headers["WWW-Authenticate"] = $"Basic realm=\"gamerzilla\"";
             context.Result = new UnauthorizedResult();
         }

@@ -1,0 +1,16 @@
+services:
+  gamerzilla:
+    image: fixflare/gamerzilla:latest
+    container_name: gamerzilla
+    restart: always
+    
+    # Map Port 5000 (Host) -> 8080 (Container)
+    ports:
+      - "5000:8080"
+    
+    env_file:
+      - .env
+
+    # Map the data folder so SQLite/Logs persist (optional but recommended)
+    volumes:
+      - ./data:/app/data

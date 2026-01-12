@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,7 +13,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Sqlite;
 using Microsoft.Extensions.Options;
@@ -21,22 +20,26 @@ using backend.Models;
 using backend.Context;
 using backend.Service;
 using backend.Settings;
+using Microsoft.OpenApi;
+using System.IO;
 
 namespace backend
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        private readonly IWebHostEnvironment _env;
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
+            _env = env;
         }
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            services.AddHttpContextAccessor();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -48,30 +51,59 @@ namespace backend
             {
                 services.AddDbContext<GamerzillaContext>(
                     options => options.UseNpgsql(Configuration["ConnectionStrings:TrophyConnection"]));
-                services.AddDbContext<UserContext>(
-                    options => options.UseNpgsql(Configuration["ConnectionStrings:UserConnection"]));
             }
             else
             {
                 services.AddDbContext<GamerzillaContext>(
                     options => options.UseSqlite(Configuration["ConnectionStrings:TrophyConnection"]));
-                services.AddDbContext<UserContext>(
-                    options => options.UseSqlite(Configuration["ConnectionStrings:UserConnection"]));
             }
             services.AddScoped<SessionContext>();
             services.AddScoped<GamerzillaService>();
             services.AddScoped<UserService>();
+            services.Configure<EmailSettings>(Configuration.GetSection("EmailSettings"));
+            services.AddTransient<EmailService>();
+            string frontend = Configuration["Frontend"] ?? "";
+            bool isHttps = frontend.StartsWith("https", StringComparison.OrdinalIgnoreCase);
+
             services.AddCors(options =>
                 options.AddPolicy("CorsPolicy", builder =>
+                {
                     builder.AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .WithOrigins(Configuration["Frontend"].Split(','))
-                        .AllowCredentials()));
-            services.AddAuthentication(options => {
+                           .AllowAnyHeader()
+                           .AllowCredentials();
+
+                    if (!string.IsNullOrWhiteSpace(frontend))
+                    {
+                        builder.WithOrigins(frontend.Split(','));
+                    }
+                    else
+                    {
+
+                        builder.SetIsOriginAllowed(_ => true);
+                    }
+                }));
+
+
+            services.AddAuthentication(options =>
+            {
                 options.DefaultScheme = "Cookies";
-            }).AddCookie("Cookies", options => {
+            }).AddCookie("Cookies", options =>
+            {
                 options.Cookie.Name = "auth_cookie";
-                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.Path = "/";
+
+
+
+                options.Cookie.SecurePolicy = isHttps
+                    ? CookieSecurePolicy.Always
+                    : CookieSecurePolicy.SameAsRequest;
+
+                options.Cookie.SameSite = isHttps
+                    ? SameSiteMode.None
+                    : SameSiteMode.Lax;
+
+                Console.WriteLine($"🍪 Cookie Policy: HTTPS Detected={isHttps}, Secure={options.Cookie.SecurePolicy}, SameSite={options.Cookie.SameSite}");
+
                 options.Events = new CookieAuthenticationEvents
                 {
                     OnRedirectToLogin = redirectContext =>
@@ -83,9 +115,22 @@ namespace backend
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+
+        private string _cachedHtml = null;
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            var basePath = Configuration["BasePath"];
+            if (!string.IsNullOrWhiteSpace(basePath))
+            {
+                var cleanPath = basePath.StartsWith("/") ? basePath : "/" + basePath;
+                cleanPath = cleanPath.TrimEnd('/');
+
+                Console.WriteLine($"🚀 Application running under base path: {cleanPath}");
+
+                app.UsePathBase(cleanPath);
+            }
+
+
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -99,8 +144,11 @@ namespace backend
             }
             else
             {
-//                app.UseHttpsRedirection();
+
             }
+
+
+            app.UseStaticFiles();
 
             app.UseRouting();
 
@@ -111,7 +159,89 @@ namespace backend
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapFallback(async (context) =>
+                {
+
+                    if (_cachedHtml != null && !_env.IsDevelopment())
+                    {
+                        context.Response.ContentType = "text/html";
+                        await context.Response.WriteAsync(_cachedHtml);
+                        return;
+                    }
+
+
+
+                    var basePath = Configuration["BasePath"]?.TrimEnd('/') ?? "";
+                    if (!basePath.StartsWith("/") && !string.IsNullOrEmpty(basePath))
+                    {
+                        basePath = "/" + basePath;
+                    }
+
+
+                    var baseHref = string.IsNullOrEmpty(basePath) ? "/" : basePath + "/";
+
+                    string frontendSetting = Configuration["Frontend"] ?? "";
+                    string frontendUrl = !string.IsNullOrWhiteSpace(frontendSetting)
+                        ? frontendSetting.Split(',')[0].TrimEnd('/')
+                        : $"{context.Request.Scheme}://{context.Request.Host}{context.Request.PathBase}";
+
+
+                    var filePath = Path.Combine(_env.WebRootPath, "index.html");
+
+                    if (!File.Exists(filePath))
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("index.html not found in wwwroot");
+                        return;
+                    }
+
+                    var html = await File.ReadAllTextAsync(filePath);
+
+
+                    var injection = $@"
+    <base href=""{baseHref}"" />
+    <script>
+      window.APP_CONFIG = {{
+        basePath: '{basePath}',
+        apiUrl: '{frontendUrl}/api'
+      }};
+    </script>";
+
+
+                    var finalHtml = html.Replace("<head>", "<head>" + injection, StringComparison.OrdinalIgnoreCase);
+
+
+                    if (!_env.IsDevelopment())
+                    {
+                        _cachedHtml = finalHtml;
+                    }
+
+                    context.Response.ContentType = "text/html";
+                    await context.Response.WriteAsync(finalHtml);
+                });
             });
+
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+
+                    var context = services.GetRequiredService<GamerzillaContext>();
+
+
+                    context.Database.EnsureCreated();
+
+                    Console.WriteLine("✅ Databases verified/created successfully.");
+                }
+                catch (Exception ex)
+                {
+
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "❌ An error occurred creating the DB.");
+                }
+            }
+
         }
     }
 }
