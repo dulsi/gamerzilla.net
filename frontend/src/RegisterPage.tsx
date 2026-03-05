@@ -26,7 +26,7 @@ export const RegisterPage: FC<RouteComponentProps> = ({
   };
   const handleRegisterSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (username != "" && password === passwordVerify) {
+    if (username !== "" && password === passwordVerify) {
       await userRegister(username, password);
     }
   };
