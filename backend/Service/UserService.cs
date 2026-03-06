@@ -50,7 +50,10 @@ public class UserService
             foreach (UserInfoDto i in res)
             {
                 i.password = "";
-                i.canApprove = false;
+                if (i.approved == false)
+                    i.canApprove = true;
+                else
+                    i.canApprove = false;
             }
         }
         else
