@@ -1,29 +1,39 @@
-import React from 'react';
-import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import { SignInPageWithRouter as SignInPage } from './SignInPage';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { SignInPage } from './SignInPage';
 import { HomePage } from './HomePage';
 import { GamePage } from './GamePage';
 import { NotFoundPage } from './NotFoundPage';
 import { Header } from './Header';
 import { GamesPage } from './GamesPage';
-import { RegisterPageWithRouter as RegisterPage } from './RegisterPage';
+import { RegisterPage } from './RegisterPage';
+import { Flex, Box } from '@radix-ui/themes';
 import './App.css';
+
+
+
+const config = window.APP_CONFIG || { basePath: '/' };
+
 
 function App() {
   return (
-    <BrowserRouter basename="/trophy">
-      <div className="App">
+    <BrowserRouter basename={config.basePath}>
+      <Flex direction="column" minHeight="100vh" className="app-root">
         <Header />
-        <Switch>
-          <Route exact path="/" component={HomePage} />
-          <Route exact path="/games/:userName" component={GamesPage} />
-          <Route exact path="/games/:userName/:page" component={GamesPage} />
-          <Route path="/signin" component={SignInPage} />
-          <Route path="/register" component={RegisterPage} />
-          <Route path="/game/:userName/:gameId" component={GamePage} />
-          <Route component={NotFoundPage} />
-        </Switch>
-      </div>
+
+        {/* Main Content Area */}
+        {/* We add 'position: relative' to ensure z-index works correctly for children */}
+        <Box style={{ position: 'relative', zIndex: 1 }} p={{ initial: '4', md: '6' }}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/games/:userName" element={<GamesPage />} />
+            <Route path="/games/:userName/:page" element={<GamesPage />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/game/:userName/:gameId" element={<GamePage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Box>
+      </Flex>
     </BrowserRouter>
   );
 }

@@ -27,26 +27,25 @@ cd gamerzilla.net/frontend
 npm install
 ```
 
-Edit src/AppSettings.ts. Remove the "+ ':5000'" from the first line.
-Remove "${server}" from the last line. Then build the frontend and copy
-the files to the web root.
+Edit src/App.tsx. Change basePath from '/' to '/trophy'. Then build the
+frontend and copy the files to the web root.
 
 ```
 npm run build
 mkdir /var/www/html/trophy
-cp -r build/* /var/www/html/trophy
+cp -r dist/* /var/www/html/trophy
 cp .htaccess /var/www/html/trophy
 ```
 
 For the backend, we can build and copy the published files. (This
-assumes .net 5. The directory in Release may change with other .net
+assumes .net 8. The directory in Release may change with other .net
 versions.)
 
 ```
 mkdir /var/www/gamerzilla.net
 cd ../backend
 dotnet publish --configuration Release
-cp -r bin/Release/net5.0/publish/* /var/www/gamerzilla.net/
+cp -r bin/Release/net8.0/publish/* /var/www/gamerzilla.net/
 ```
 
 Setup the .net backend to run as a service.
@@ -105,6 +104,6 @@ For /trophy, you need to modify the basename in src/App.tsx.
 
 To modify Gamerzilla.Net, you clone the repository. You still run 'npm
 install' in the frontend directory but most of the other setup is
-skipped. To start the frontend you run 'npm start'. To start the backend
-you run 'dotnet run' from the backend directory. You will still need to
-create the user manually.
+skipped. To start the frontend you run 'npm run server'. To start the
+backend you run 'dotnet run' from the backend directory. You will still
+need to create the user manually.

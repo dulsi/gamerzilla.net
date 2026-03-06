@@ -1,4 +1,4 @@
-import { http } from "./http";
+import { http } from './http';
 
 export interface LoginData {
   username: string;
@@ -14,139 +14,106 @@ export interface UserData {
 }
 
 const userDataEmpty: UserData = {
-  userName: "",
-  password: "",
+  userName: '',
+  password: '',
   admin: false,
   visible: false,
-  canApprove: false
+  canApprove: false,
 };
 
-export const userLogin = async (username: string, password: string):
-  Promise<UserData> => {
-    try {
-      const postBody : LoginData = {username: username, password: password};
-      const result = await http<
-        LoginData,
-        UserData
-      >({
-        path: '/user/login',
-        method: 'post',
-        body: postBody
-      });
-      if (result.parsedBody) {
-        return result.parsedBody;
-      } else {
-        return userDataEmpty;
-      }
-    } catch (ex) {
-      console.error(ex);
+export const userLogin = async (username: string, password: string): Promise<UserData> => {
+  try {
+    const postBody: LoginData = { username: username, password: password };
+    const result = await http<LoginData, UserData>({
+      path: '/user/login',
+      method: 'post',
+      body: postBody,
+    });
+    if (result.parsedBody) {
+      return result.parsedBody;
+    } else {
       return userDataEmpty;
     }
-  };
+  } catch (ex) {
+    console.error(ex);
+    return userDataEmpty;
+  }
+};
 
-export const userLogout = async ():
-  Promise<boolean> => {
-    try {
-      await http<
-        undefined,
-        boolean
-      >({
-        path: '/user/logout',
-      });
-      return true;
-    } catch (ex) {
-      console.error(ex);
-      return false;
-    }
-  };
+export const userLogout = async (): Promise<boolean> => {
+  try {
+    await http<undefined, boolean>({
+      path: '/user/logout',
+      method: 'post',
+    });
+    return true;
+  } catch (ex) {
+    console.error(ex);
+    return false;
+  }
+};
 
-export const userRegister = async (username: string, password: string):
-  Promise<UserData> => {
-    try {
-      const postBody : LoginData = {username: username, password: password};
-      const result = await http<
-        LoginData,
-        UserData
-      >({
-        path: '/user/register',
-        method: 'post',
-        body: postBody
-      });
-      if (result.parsedBody) {
-        return result.parsedBody;
-      } else {
-        return userDataEmpty;
-      }
-    } catch (ex) {
-      console.error(ex);
+export const userRegister = async (
+  username: string,
+  password: string,
+): Promise<UserData> => {
+  const postBody: LoginData = { username: username, password: password };
+
+  const result = await http<LoginData, UserData>({
+    path: '/user/register',
+    method: 'post',
+    body: postBody,
+  });
+
+  if (result.parsedBody) {
+    return result.parsedBody;
+  } else {
+    return userDataEmpty;
+  }
+};
+
+export const getWhoami = async (): Promise<UserData> => {
+  try {
+    const result = await http<undefined, UserData>({
+      path: '/user/whoami',
+    });
+    if (result.parsedBody) {
+      return result.parsedBody;
+    } else {
       return userDataEmpty;
     }
-  };
+  } catch (ex) {
+    console.error(ex);
+    return userDataEmpty;
+  }
+};
 
-export const getWhoami = async ():
-  Promise<UserData> => {
-    try {
-      const result = await http<
-        undefined,
-        UserData
-      >({
-        path: '/user/whoami',
-      });
-      if (result.parsedBody) {
-        return result.parsedBody;
-      } else {
-        return userDataEmpty;
-      }
-    } catch (ex) {
-      console.error(ex);
-      return userDataEmpty;
-    }
-  };
+export const approve = async (userName: string): Promise<void> => {
+  await http<undefined, boolean>({
+    path: '/user/approve?username=' + userName,
+    method: 'post',
+  });
+};
 
-
-export const approve = async (userName: string):
-  Promise<boolean> => {
-    try {
-      await http<
-        undefined,
-        boolean
-      >({
-        path: '/user/approve?username=' + userName,
-      });
-      return true;
-    } catch (ex) {
-      console.error(ex);
-      return false;
-    }
-  };
-
-export const getUserList = async ():
-  Promise<UserData[]> => {
-    try {
-      const result = await http<
-        undefined,
-        UserData[]
-      >({
-        path: '/user',
-      });
-      if (result.parsedBody) {
-        return result.parsedBody;
-      } else {
-        return [];
-      }
-    } catch (ex) {
-      console.error(ex);
+export const getUserList = async (): Promise<UserData[]> => {
+  try {
+    const result = await http<undefined, UserData[]>({
+      path: '/user',
+    });
+    if (result.parsedBody) {
+      return result.parsedBody;
+    } else {
       return [];
     }
-  };
+  } catch (ex) {
+    console.error(ex);
+    return [];
+  }
+};
 
-export const canRegister = async ():
-Promise<boolean> => {
+export const canRegister = async (): Promise<boolean> => {
   try {
-    const result = await http<
-      undefined,
-      boolean
-    >({
+    const result = await http<undefined, boolean>({
       path: '/user/canregister',
     });
     if (result.parsedBody) {
@@ -160,18 +127,15 @@ Promise<boolean> => {
   }
 };
 
-export const visible = async (userName: string, val: number):
-  Promise<boolean> => {
-    try {
-      await http<
-        undefined,
-        boolean
-      >({
-        path: '/user/visible?username=' + userName + '&val=' + val,
-      });
-      return true;
-    } catch (ex) {
-      console.error(ex);
-      return false;
-    }
-  };
+export const visible = async (userName: string, val: number): Promise<boolean> => {
+  try {
+    await http<undefined, boolean>({
+      path: '/user/visible?username=' + userName + '&val=' + val,
+      method: 'post',
+    });
+    return true;
+  } catch (ex) {
+    console.error(ex);
+    return false;
+  }
+};
