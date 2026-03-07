@@ -40,7 +40,6 @@ public class UserService
 
     public IEnumerable<UserInfoDto> GetUsers(bool admin)
     {
-        IEnumerable<UserInfoDto> res;
         if (admin)
         {
             return _context.Users
@@ -71,7 +70,6 @@ public class UserService
                 })
                 .ToList();
         }
-        return res;
     }
 
     public bool IsValidUser(string userName, string password)

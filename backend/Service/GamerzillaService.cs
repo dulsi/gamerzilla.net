@@ -307,7 +307,7 @@ public class GamerzillaService
         MemoryStream memStream = new MemoryStream(20000);
         s.CopyTo(memStream);
         memStream.Seek(0, SeekOrigin.Begin);
-        SixLabors.ImageSharp.Image imgOrig = SixLabors.ImageSharp.Image.Load(memStream, new SixLabors.ImageSharp.Formats.Png.PngDecoder());
+        SixLabors.ImageSharp.Image imgOrig = SixLabors.ImageSharp.Image.Load(memStream);
         memStream.Seek(0, SeekOrigin.Begin);
         if (imgOrig.Height != h && imgOrig.Width != w)
         {
