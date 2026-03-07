@@ -1,4 +1,3 @@
-using AutoMapper;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -19,16 +18,14 @@ public class UserService
     UserContext _context;
     private readonly RegistrationOptions _options;
     ILogger<UserService> _log;
-    IMapper _mapper { get; }
 
-    public UserService(SessionContext sessionContext, UserContext userContext, IOptions<RegistrationOptions> options, ILogger<UserService> log, IMapper mapper)
+    public UserService(SessionContext sessionContext, UserContext userContext, IOptions<RegistrationOptions> options, ILogger<UserService> log)
     {
         _sessionContext = sessionContext;
         _context = userContext;
         _context.Database.EnsureCreated();
         _options = options.Value;
         _log = log;
-        _mapper = mapper;
     }
 
     public bool Approve(string userName)
@@ -46,25 +43,33 @@ public class UserService
         IEnumerable<UserInfoDto> res;
         if (admin)
         {
-            res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.ToList());
-            foreach (UserInfoDto i in res)
-            {
-                i.password = "";
-                if (i.approved == false)
-                    i.canApprove = true;
-                else
-                    i.canApprove = false;
-            }
+            return _context.Users
+                .Select(u => new UserInfoDto
+                {
+                    userName = u.UserName,
+                    admin = u.Admin,
+                    approved = u.Approved,
+                    visible = u.Visible,
+                    password = "",
+                    canApprove = !u.Approved
+                })
+                .ToList();
         }
         else
         {
-            res = _mapper.Map<IEnumerable<UserInfoDto>>(_context.Users.Where(u => u.Visible == true && u.Approved == true).ToList());
-            foreach (UserInfoDto i in res)
-            {
-                i.password = "";
-                i.admin = false;
-                i.canApprove = false;
-            }
+            return _context.Users
+                .Where(u => u.Visible == true &&
+                       (u.Approved == true || u.Admin == true || !_options.RequireApproval))
+                .Select(u => new UserInfoDto
+                {
+                    userName = u.UserName,
+                    admin = false,
+                    approved = u.Approved,
+                    visible = u.Visible,
+                    password = "",
+                    canApprove = false
+                })
+                .ToList();
         }
         return res;
     }
@@ -125,10 +130,20 @@ public class UserService
 
     public UserInfoDto GetCurrentUser()
     {
-        UserInfoDto user = _mapper.Map<UserInfoDto>(_context.Users.Find(_sessionContext.UserId));
-        user.password = "";
-        user.canApprove = false;
-        return user;
+        var dbUser = _context.Users.Find(_sessionContext.UserId);
+
+
+        if (dbUser == null) return null;
+
+        return new UserInfoDto
+        {
+            userName = dbUser.UserName,
+            admin = dbUser.Admin,
+            approved = dbUser.Approved,
+            visible = dbUser.Visible,
+            password = "",
+            canApprove = false
+        };
     }
     
     public async Task<UserInfo> RegisterUser(string userName, string password)

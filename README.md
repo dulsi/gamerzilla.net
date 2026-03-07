@@ -4,6 +4,8 @@ This repository holds implementations for a Gamerzilla web site. There
 is a single react frontend and two complete backends. The python backend
 is still in development.
 
+The react frontend was created by Mike from fixflare.
+
 [Setup for .Net backend](README.net.md)
 
 [Setup for PHP backend](README.php.md)
