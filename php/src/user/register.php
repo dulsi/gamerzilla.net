@@ -25,12 +25,14 @@ if ($user->execute() && $user->fetch()) {
 }
 else {
 	$userAdd = $db->prepare("insert into user(username, password, admin, visible, approved) values (:NAME, :PASSWORD, 0, 0, :APPROVED)");
+	$normalizedPassword = truncatePassword($data["password"]);
+	$hashedPassword = password_hash($normalizedPassword, PASSWORD_BCRYPT);
 	$userAdd->bindValue(':NAME', $data["username"]);
-	$userAdd->bindValue(':PASSWORD', $data["password"]);
+	$userAdd->bindValue(':PASSWORD', $hashedPassword);
 	$userAdd->bindValue(':APPROVED', ($registrationOptions['RequireApproval'] ? 0 : 1));
 	$userAdd->execute();
 }
-$user = $db->prepare("select * from user u where u.id = :NAME");
+$user = $db->prepare("select * from user u where u.username = :NAME");
 $user->bindValue(':NAME', $data["username"]);
 if ($user->execute()) {
 	$row = $user->fetch();

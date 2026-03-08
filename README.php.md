@@ -58,6 +58,9 @@ insert into User(username,password,admin,visible,approved) values ('somename','s
 .quit
 ```
 
+Use the [bcryptuserdb program](utils/bcryptuserdb/README.md) in utils/bcryptuserdb, to encrypt all
+password in the database.
+
 Change to the frontend directory and install the javascript libraries.
 
 ```

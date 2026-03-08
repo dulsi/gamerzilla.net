@@ -9,6 +9,13 @@ function getUserDB() {
 	return 	new PDO("sqlite:" . dirname(__FILE__) . "/../db/User.db");
 }
 
+function truncatePassword($password) {
+	if (strlen($password) > 72) {
+		return substr($password, 0, 72);
+	}
+	return $password;
+}
+
 function isAuthorized() {
 	session_start();
 	if (isset($_SESSION['id']))
@@ -19,13 +26,15 @@ function isAuthorized() {
 
 function authorize($username, $password, $requireApproved) {
 	$userDb = getUserDB();
-	$user = $userDb->prepare("select id, approved from user u where u.username = :NAME and u.password = :PASSWORD");
+	$user = $userDb->prepare("select id, approved, password from user u where u.username = :NAME");
 	$user->bindValue(':NAME', $username);
-	$user->bindValue(':PASSWORD', $password);
 	if ($user->execute()) {
 		if ($row = $user->fetch()) {
-			if (($requireApproved != 1) || ($row["Approved"] == 1)) {
-				return $row["Id"];
+			$normalizedPassword = truncatePassword($password);
+			if (password_verify($normalizedPassword, $row["Password"])) {
+				if (($requireApproved != 1) || ($row["Approved"] == 1)) {
+					return $row["Id"];
+				}
 			}
 		}
 	}

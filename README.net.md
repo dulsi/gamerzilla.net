@@ -84,8 +84,8 @@ insert into User(username,password,admin,visible,approved) values ('somename','s
 .quit
 ```
 
-Currently there is no way to register new users. They must be inserted
-directly in the database.
+Use the [bcryptuserdb program](utils/bcryptuserdb/README.md) in utils/bcryptuserdb, to encrypt all
+password in the database.
 
 ## Setup on other Linux distributions
 

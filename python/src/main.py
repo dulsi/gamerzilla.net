@@ -5,6 +5,7 @@ from PIL import Image
 from flask import Flask,jsonify,request,make_response,session,abort
 from flask_cors import CORS
 from flask_session import Session
+import bcrypt
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['CORS_SUPPORTS_CREDENTIALS'] = True
@@ -33,12 +34,15 @@ def is_authorized():
 
 def authorize(username, password, requireApproved):
     conn = get_user_db_connection()
-    args = { "NAME" : username, "PASSWORD" : password }
-    r = conn.execute("select id, approved from user u where u.username = :NAME and u.password = :PASSWORD", args).fetchone()
+    args = { "NAME" : username }
+    r = conn.execute("select id, approved, password from user u where u.username = :NAME", args).fetchone()
     answer = 0
-    if r != None:
-        if (requireApproved == 0) or (r["approved"] == 1):
-            answer = r["id"]
+    if r is not None:
+        stored_password = r["password"]
+        password_bytes = password.encode("utf-8")[:72]
+        if stored_password is not None and bcrypt.checkpw(password_bytes, stored_password.encode("utf-8")):
+            if (requireApproved == 0) or (r["approved"] == 1):
+                answer = r["id"]
     conn.close()
     return answer
 

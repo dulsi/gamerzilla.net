@@ -12,7 +12,7 @@ source ./bin/activate
 Install the needed python packages with:
 
 ```
-pip install flask flask_session flask_cors pillow
+pip install flask flask_session flask_cors pillow bcrypt
 ```
 
 Set the environment variable FLASK_APP and run the python project in

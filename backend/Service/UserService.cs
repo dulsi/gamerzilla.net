@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,21 @@ public class UserService
         _context.Database.EnsureCreated();
         _options = options.Value;
         _log = log;
+    }
+
+    // This truncation is slightly different than other gamerzilla
+    // implementations. This may be less 72 bytes if the last character is a
+    // multibyte character.
+    static string TruncatePasswordTo72Bytes(string password)
+    {
+        if (string.IsNullOrEmpty(password)) return password;
+        var encoding = Encoding.UTF8;
+        var bytes = encoding.GetBytes(password);
+        if (bytes.Length <= 72) return password;
+        int len = 72;
+        while (len > 0 && (bytes[len - 1] & 0x80) != 0 && (bytes[len - 1] & 0x40) == 0)
+            len--;
+        return encoding.GetString(bytes, 0, len);
     }
 
     public bool Approve(string userName)
@@ -75,7 +91,7 @@ public class UserService
     public bool IsValidUser(string userName, string password)
     {
         UserInfo user = _context.Users.FirstOrDefault(g => g.UserName == userName);
-        if ((user != null) && (password == user.Password))
+        if ((user != null) && (BCrypt.Net.BCrypt.Verify(TruncatePasswordTo72Bytes(password), user.Password)))
         {
             _sessionContext.UserName = userName;
             _sessionContext.UserId = user.Id;
@@ -89,7 +105,7 @@ public class UserService
                 {
                     user = new UserInfo();
                     user.UserName = _options.AdminUsername;
-                    user.Password = _options.AdminPassword;
+                    user.Password = BCrypt.Net.BCrypt.HashPassword(TruncatePasswordTo72Bytes(_options.AdminPassword));
                     user.Approved = true;
                     user.Visible = true;
                     user.Admin = true;
@@ -148,7 +164,7 @@ public class UserService
     {
         UserInfo user = new UserInfo();
         user.UserName = userName;
-        user.Password = password;
+        user.Password = BCrypt.Net.BCrypt.HashPassword(TruncatePasswordTo72Bytes(password));
         user.Approved = !_options.RequireApproval;
         user.Visible = false;
         user.Admin = false;
